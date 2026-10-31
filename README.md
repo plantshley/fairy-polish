@@ -12,7 +12,11 @@ Edit how a site looks in the browser (layout, size, spacing, type, color, effect
 3. Edit, then press **Save**. Files land in `<project>/.fairy-polish/<timestamp>.json` (for the agent) and `.md` (for you).
 4. Ask Claude Code: `/fairy-polish apply`. The agent applies the newest file, checks the result in a browser with `window.__fairyPolish.verify()`, and moves the file to `.fairy-polish/applied/`.
 
-The skill lives at `~/.claude/skills/fairy-polish/SKILL.md`, so `/fairy-polish` works in any Claude Code session (CLI, desktop, or IDE extension).
+The skill is versioned in this repo at `skill/SKILL.md`. `~/.claude/skills/fairy-polish` is a directory junction to that folder, so `/fairy-polish` works in any Claude Code session (CLI, desktop, or IDE extension), and edits to the skill show up in git. To set up the junction on a new machine, after cloning to `Documents\GitHub`:
+
+```powershell
+New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\skills\fairy-polish" -Target "$env:USERPROFILE\Documents\GitHub\fairy-polish\skill"
+```
 
 ## The editor
 
@@ -44,6 +48,7 @@ server/         routes and source tagging shared by both servers
 vite-plugin/    fairyPolish() for Vite dev servers
 standalone/     static server for plain-HTML projects
 effects/        the effects gallery (see effects/README.md)
+skill/          the global /fairy-polish Claude Code skill (junctioned into ~/.claude/skills)
 playground/     test pages: react/ (Vite + React) and static/
 test/           node --test suites
 ```
