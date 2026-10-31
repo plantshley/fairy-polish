@@ -1,0 +1,41 @@
+{
+  "id": "hover-sparkles",
+  "name": "Hover star sparkles",
+  "category": "hover",
+  "target": "element",
+  "params": [
+    {
+      "key": "a",
+      "label": "Color 1",
+      "type": "color",
+      "default": "#ff8fc7"
+    },
+    {
+      "key": "b",
+      "label": "Color 2",
+      "type": "color",
+      "default": "#b89bff"
+    },
+    {
+      "key": "c",
+      "label": "Color 3",
+      "type": "color",
+      "default": "#ffd86b"
+    },
+    {
+      "key": "bleed",
+      "label": "Spread",
+      "type": "number",
+      "default": 32,
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px"
+    }
+  ],
+  "respectsReducedMotion": true,
+  "origin": {
+    "repo": "fairy/fairy-shop",
+    "file": "src/components/HoverSparkles.jsx"
+  }
+}

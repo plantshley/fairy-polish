@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "playground",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "playground/react"],
+      "port": 5287
+    },
+    {
+      "name": "playground-static",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["standalone/serve.js", "playground/static", "--port", "5199"],
+      "port": 5199
+    }
+  ]
+}

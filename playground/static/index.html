@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>fairy polish static playground</title>
+    <style>
+      body { margin: 0; font: 16px/1.5 Georgia, serif; background: #fffaf3; color: #2b2420; }
+      .wrap { max-width: 760px; margin: 0 auto; padding: 40px 20px; }
+      .tiles { display: flex; gap: 12px; flex-wrap: wrap; }
+      .tile { flex: 1 1 200px; padding: 16px; border: 1px solid #e6dccf; border-radius: 10px; background: #fff; }
+      @media (prefers-color-scheme: dark) { body { background: #1d1916; color: #efe7dc; } .tile { background: #29231f; border-color: #3a322c; } }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Static page</h1>
+      <p>Plain HTML served by the standalone server.</p>
+      <div class="tiles">
+        <div class="tile">Alpha</div>
+        <div class="tile">Beta</div>
+        <div class="tile">Gamma</div>
+      </div>
+    </div>
+  </body>
+</html>

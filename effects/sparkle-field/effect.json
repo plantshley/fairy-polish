@@ -1,0 +1,34 @@
+{
+  "id": "sparkle-field",
+  "name": "Star sparkle field",
+  "category": "background",
+  "target": "background",
+  "params": [
+    {
+      "key": "palette",
+      "label": "Colors",
+      "type": "select",
+      "default": "flower",
+      "options": [
+        "flower",
+        "fairy",
+        "gold"
+      ]
+    },
+    {
+      "key": "bleed",
+      "label": "Spread",
+      "type": "number",
+      "default": 32,
+      "min": 0,
+      "max": 240,
+      "step": 8,
+      "unit": "px"
+    }
+  ],
+  "respectsReducedMotion": true,
+  "origin": {
+    "repo": "SDSHC-master-dashboard",
+    "file": "src/components/HeroSparkles/HeroSparkles.jsx (+ .css)"
+  }
+}

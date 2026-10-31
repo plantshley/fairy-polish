@@ -1,0 +1,53 @@
+{
+  "id": "particle-burst",
+  "name": "Particle burst (click)",
+  "category": "click",
+  "target": "element",
+  "params": [
+    {
+      "key": "count",
+      "label": "Particles",
+      "type": "number",
+      "default": 14,
+      "min": 4,
+      "max": 40,
+      "step": 1
+    },
+    {
+      "key": "size",
+      "label": "Size",
+      "type": "number",
+      "default": 12,
+      "min": 4,
+      "max": 24,
+      "step": 1,
+      "unit": "px"
+    },
+    {
+      "key": "distance",
+      "label": "Distance",
+      "type": "number",
+      "default": 80,
+      "min": 20,
+      "max": 200,
+      "step": 5,
+      "unit": "px"
+    },
+    {
+      "key": "palette",
+      "label": "Colors",
+      "type": "select",
+      "default": "neon",
+      "options": [
+        "neon",
+        "pastel",
+        "gold"
+      ]
+    }
+  ],
+  "respectsReducedMotion": true,
+  "origin": {
+    "repo": "SDSHC-games-hub",
+    "file": "src/screens/intro.js spawnBurstParticles + src/styles/intro.css .intro-burst-particle"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "id": "scroll-reveal",
+  "name": "Reveal on scroll",
+  "category": "entrance",
+  "target": "element",
+  "params": [
+    {
+      "key": "distance",
+      "label": "Distance",
+      "type": "number",
+      "default": 24,
+      "min": 0,
+      "max": 120,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "key": "duration",
+      "label": "Duration",
+      "type": "number",
+      "default": 700,
+      "min": 100,
+      "max": 3000,
+      "step": 50,
+      "unit": "ms"
+    },
+    {
+      "key": "threshold",
+      "label": "Visible %",
+      "type": "number",
+      "default": 15,
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "%"
+    }
+  ],
+  "respectsReducedMotion": true,
+  "origin": {
+    "builtin": true
+  }
+}

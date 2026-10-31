@@ -1,0 +1,51 @@
+{
+  "id": "shooting-stars",
+  "name": "Shooting stars background",
+  "category": "background",
+  "target": "background",
+  "params": [
+    {
+      "key": "head",
+      "label": "Star color",
+      "type": "color",
+      "default": "#ffffff"
+    },
+    {
+      "key": "tailA",
+      "label": "Tail color 1",
+      "type": "color",
+      "default": "#ff5795"
+    },
+    {
+      "key": "tailB",
+      "label": "Tail color 2",
+      "type": "color",
+      "default": "#ffd856"
+    },
+    {
+      "key": "travel",
+      "label": "Travel",
+      "type": "number",
+      "default": 300,
+      "min": 100,
+      "max": 800,
+      "step": 20,
+      "unit": "px"
+    },
+    {
+      "key": "duration",
+      "label": "Duration",
+      "type": "number",
+      "default": 3000,
+      "min": 1000,
+      "max": 8000,
+      "step": 100,
+      "unit": "ms"
+    }
+  ],
+  "respectsReducedMotion": true,
+  "origin": {
+    "repo": "making-thinking-visual",
+    "file": "Github-Setup-Starmap/styles.css (.shooting-star); same markup in student-model-gallery/index.html"
+  }
+}

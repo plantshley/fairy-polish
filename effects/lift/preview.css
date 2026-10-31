@@ -1,0 +1,3 @@
+[data-fp-fx~="lift"] { transition: transform var(--fp-lift-duration) ease, box-shadow var(--fp-lift-duration) ease; }
+[data-fp-fx~="lift"]:is(:hover, [data-fp-demo]) { transform: translateY(calc(-1 * var(--fp-lift-distance))); box-shadow: 0 calc(var(--fp-lift-distance) * 2) calc(var(--fp-lift-distance) * 4) rgba(0, 0, 0, 0.16); }
+@media (prefers-reduced-motion: reduce) { [data-fp-fx~="lift"] { animation: none !important; transition: none !important; } }

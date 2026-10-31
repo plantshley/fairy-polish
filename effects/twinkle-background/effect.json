@@ -1,0 +1,34 @@
+{
+  "id": "twinkle-background",
+  "name": "Twinkling sparkles background",
+  "category": "background",
+  "target": "background",
+  "params": [
+    {
+      "key": "color",
+      "label": "Sparkle color",
+      "type": "color",
+      "default": "#ffd1f0"
+    },
+    {
+      "key": "count",
+      "label": "Sparkles",
+      "type": "number",
+      "default": 30,
+      "min": 5,
+      "max": 80,
+      "step": 1
+    },
+    {
+      "key": "emojis",
+      "label": "Floating emojis",
+      "type": "text",
+      "default": ""
+    }
+  ],
+  "respectsReducedMotion": true,
+  "origin": {
+    "repo": "fairy/fairy-shop",
+    "file": "src/components/AnimatedBackground.jsx"
+  }
+}

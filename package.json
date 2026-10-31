@@ -1,0 +1,30 @@
+{
+  "name": "fairy-polish",
+  "version": "0.1.0",
+  "private": true,
+  "description": "In-browser appearance editor that exports change files for a Claude Code agent to apply.",
+  "type": "module",
+  "main": "vite-plugin/index.js",
+  "bin": {
+    "fairy-polish-serve": "standalone/serve.js"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test test/*.test.mjs",
+    "playground": "vite playground/react",
+    "playground:static": "node standalone/serve.js playground/static",
+    "effects:index": "node effects/build-index.mjs"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.26.0",
+    "esbuild": "^0.24.0",
+    "magic-string": "^0.30.12",
+    "parse5": "^7.2.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "vite": "^6.0.0"
+  }
+}

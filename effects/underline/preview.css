@@ -1,0 +1,3 @@
+[data-fp-fx~="underline"] { text-decoration: none; background-image: linear-gradient(var(--fp-underline-color), var(--fp-underline-color)); background-repeat: no-repeat; background-position: 0 100%; background-size: 0% var(--fp-underline-thickness); transition: background-size var(--fp-underline-duration) ease; }
+[data-fp-fx~="underline"]:is(:hover, [data-fp-demo]) { background-size: 100% var(--fp-underline-thickness); }
+@media (prefers-reduced-motion: reduce) { [data-fp-fx~="underline"] { animation: none !important; transition: none !important; } }

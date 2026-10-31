@@ -1,0 +1,2 @@
+[data-fp-layer="shimmer"]::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, var(--fp-shimmer-tint) 50%, transparent 70%); background-size: 250% 100%; animation: fp-shimmer var(--fp-shimmer-duration) linear infinite; }
+@keyframes fp-shimmer { from { background-position: 150% 0; } to { background-position: -100% 0; } }

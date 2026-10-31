@@ -1,0 +1,835 @@
+[
+  {
+    "id": "animated-gradient",
+    "name": "Animated gradient background",
+    "category": "background",
+    "target": "background",
+    "params": [
+      {
+        "key": "a",
+        "label": "Color 1",
+        "type": "color",
+        "default": "#ffd6e8"
+      },
+      {
+        "key": "b",
+        "label": "Color 2",
+        "type": "color",
+        "default": "#d6e4ff"
+      },
+      {
+        "key": "c",
+        "label": "Color 3",
+        "type": "color",
+        "default": "#e8d6ff"
+      },
+      {
+        "key": "angle",
+        "label": "Angle",
+        "type": "number",
+        "default": 135,
+        "min": 0,
+        "max": 360,
+        "step": 5,
+        "unit": "deg"
+      },
+      {
+        "key": "duration",
+        "label": "Duration",
+        "type": "number",
+        "default": 15000,
+        "min": 2000,
+        "max": 40000,
+        "step": 500,
+        "unit": "ms"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "repo": "fairy/fairy-shop",
+      "file": "src/index.css (.animated-gradient-bg)"
+    }
+  },
+  {
+    "id": "button-shine",
+    "name": "Button shine sweep",
+    "category": "hover",
+    "target": "element",
+    "params": [
+      {
+        "key": "strength",
+        "label": "Strength",
+        "type": "number",
+        "default": 0.15,
+        "min": 0.05,
+        "max": 0.8,
+        "step": 0.05
+      },
+      {
+        "key": "duration",
+        "label": "Duration",
+        "type": "number",
+        "default": 700,
+        "min": 200,
+        "max": 2000,
+        "step": 50,
+        "unit": "ms"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "repo": "SDSHC-master-dashboard",
+      "file": "src/components/NavButton/NavButton.css (.nav-tab-btn-shine)"
+    }
+  },
+  {
+    "id": "color-shift",
+    "name": "Color shift",
+    "category": "hover",
+    "target": "element",
+    "params": [
+      {
+        "key": "bg",
+        "label": "Background",
+        "type": "color",
+        "default": "#c2569b"
+      },
+      {
+        "key": "fg",
+        "label": "Text",
+        "type": "color",
+        "default": "#ffffff"
+      },
+      {
+        "key": "duration",
+        "label": "Duration",
+        "type": "number",
+        "default": 200,
+        "min": 50,
+        "max": 1000,
+        "step": 10,
+        "unit": "ms"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "builtin": true
+    }
+  },
+  {
+    "id": "cursor-sparkles",
+    "name": "Cursor sparkle trail",
+    "category": "cursor",
+    "target": "element",
+    "params": [
+      {
+        "key": "a",
+        "label": "Color 1",
+        "type": "color",
+        "default": "#ff8fc7"
+      },
+      {
+        "key": "b",
+        "label": "Color 2",
+        "type": "color",
+        "default": "#b89bff"
+      },
+      {
+        "key": "c",
+        "label": "Color 3",
+        "type": "color",
+        "default": "#ffd86b"
+      },
+      {
+        "key": "pastel",
+        "label": "Random pastels instead",
+        "type": "boolean",
+        "default": false
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "repo": "fairy/fairy-shop",
+      "file": "src/components/CursorSparkles.jsx"
+    }
+  },
+  {
+    "id": "fade-in",
+    "name": "Fade in",
+    "category": "entrance",
+    "target": "element",
+    "params": [
+      {
+        "key": "duration",
+        "label": "Duration",
+        "type": "number",
+        "default": 600,
+        "min": 100,
+        "max": 3000,
+        "step": 50,
+        "unit": "ms"
+      },
+      {
+        "key": "delay",
+        "label": "Delay",
+        "type": "number",
+        "default": 0,
+        "min": 0,
+        "max": 3000,
+        "step": 50,
+        "unit": "ms"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "builtin": true
+    }
+  },
+  {
+    "id": "float",
+    "name": "Float",
+    "category": "loop",
+    "target": "element",
+    "params": [
+      {
+        "key": "distance",
+        "label": "Distance",
+        "type": "number",
+        "default": 8,
+        "min": 2,
+        "max": 40,
+        "step": 1,
+        "unit": "px"
+      },
+      {
+        "key": "duration",
+        "label": "Duration",
+        "type": "number",
+        "default": 3000,
+        "min": 500,
+        "max": 10000,
+        "step": 100,
+        "unit": "ms"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "builtin": true
+    }
+  },
+  {
+    "id": "glow",
+    "name": "Glow",
+    "category": "hover",
+    "target": "element",
+    "params": [
+      {
+        "key": "color",
+        "label": "Color",
+        "type": "color",
+        "default": "#c2569b"
+      },
+      {
+        "key": "size",
+        "label": "Size",
+        "type": "number",
+        "default": 18,
+        "min": 2,
+        "max": 60,
+        "step": 1,
+        "unit": "px"
+      },
+      {
+        "key": "duration",
+        "label": "Duration",
+        "type": "number",
+        "default": 250,
+        "min": 50,
+        "max": 1000,
+        "step": 10,
+        "unit": "ms"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "builtin": true
+    }
+  },
+  {
+    "id": "glow-ripple",
+    "name": "Glowing pulse (ripple)",
+    "category": "loop",
+    "target": "element",
+    "params": [
+      {
+        "key": "color",
+        "label": "Color",
+        "type": "color",
+        "default": "#4ae8e0"
+      },
+      {
+        "key": "strength",
+        "label": "Strength",
+        "type": "number",
+        "default": 0.3,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "key": "size",
+        "label": "Reach",
+        "type": "number",
+        "default": 80,
+        "min": 20,
+        "max": 200,
+        "step": 5,
+        "unit": "px"
+      },
+      {
+        "key": "duration",
+        "label": "Duration",
+        "type": "number",
+        "default": 4000,
+        "min": 1000,
+        "max": 10000,
+        "step": 100,
+        "unit": "ms"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "repo": "SDSHC-games-hub",
+      "file": "src/styles/intro.css (.intro-ripple on .intro-mode-btn)"
+    }
+  },
+  {
+    "id": "gradient-text",
+    "name": "Gradient text",
+    "category": "loop",
+    "target": "element",
+    "params": [
+      {
+        "key": "palette",
+        "label": "Palette",
+        "type": "select",
+        "default": "cyan-purple",
+        "options": [
+          "cyan-purple",
+          "rainbow"
+        ]
+      },
+      {
+        "key": "duration",
+        "label": "Duration",
+        "type": "number",
+        "default": 8000,
+        "min": 1000,
+        "max": 20000,
+        "step": 500,
+        "unit": "ms"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "repo": "web-tools-persona-quest (live site) and SDSHC-games-hub",
+      "file": ".animate-gradient title (persona quest); src/styles/intro.css .intro-btn-label (games-hub)"
+    }
+  },
+  {
+    "id": "hover-sparkles",
+    "name": "Hover star sparkles",
+    "category": "hover",
+    "target": "element",
+    "params": [
+      {
+        "key": "a",
+        "label": "Color 1",
+        "type": "color",
+        "default": "#ff8fc7"
+      },
+      {
+        "key": "b",
+        "label": "Color 2",
+        "type": "color",
+        "default": "#b89bff"
+      },
+      {
+        "key": "c",
+        "label": "Color 3",
+        "type": "color",
+        "default": "#ffd86b"
+      },
+      {
+        "key": "bleed",
+        "label": "Spread",
+        "type": "number",
+        "default": 32,
+        "min": 0,
+        "max": 120,
+        "step": 4,
+        "unit": "px"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "repo": "fairy/fairy-shop",
+      "file": "src/components/HoverSparkles.jsx"
+    }
+  },
+  {
+    "id": "lift",
+    "name": "Lift",
+    "category": "hover",
+    "target": "element",
+    "params": [
+      {
+        "key": "distance",
+        "label": "Distance",
+        "type": "number",
+        "default": 4,
+        "min": 0,
+        "max": 20,
+        "step": 1,
+        "unit": "px"
+      },
+      {
+        "key": "duration",
+        "label": "Duration",
+        "type": "number",
+        "default": 200,
+        "min": 50,
+        "max": 1000,
+        "step": 10,
+        "unit": "ms"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "builtin": true
+    }
+  },
+  {
+    "id": "particle-burst",
+    "name": "Particle burst (click)",
+    "category": "click",
+    "target": "element",
+    "params": [
+      {
+        "key": "count",
+        "label": "Particles",
+        "type": "number",
+        "default": 14,
+        "min": 4,
+        "max": 40,
+        "step": 1
+      },
+      {
+        "key": "size",
+        "label": "Size",
+        "type": "number",
+        "default": 12,
+        "min": 4,
+        "max": 24,
+        "step": 1,
+        "unit": "px"
+      },
+      {
+        "key": "distance",
+        "label": "Distance",
+        "type": "number",
+        "default": 80,
+        "min": 20,
+        "max": 200,
+        "step": 5,
+        "unit": "px"
+      },
+      {
+        "key": "palette",
+        "label": "Colors",
+        "type": "select",
+        "default": "neon",
+        "options": [
+          "neon",
+          "pastel",
+          "gold"
+        ]
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "repo": "SDSHC-games-hub",
+      "file": "src/screens/intro.js spawnBurstParticles + src/styles/intro.css .intro-burst-particle"
+    }
+  },
+  {
+    "id": "pixel-press",
+    "name": "Pixel press button",
+    "category": "hover",
+    "target": "element",
+    "params": [
+      {
+        "key": "border",
+        "label": "Border color",
+        "type": "color",
+        "default": "#4a2545"
+      },
+      {
+        "key": "offset",
+        "label": "Shadow offset",
+        "type": "number",
+        "default": 3,
+        "min": 1,
+        "max": 8,
+        "step": 1,
+        "unit": "px"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "repo": "fairy/fairy-shop",
+      "file": "src/styles/pixel.css (.pxbtn)"
+    }
+  },
+  {
+    "id": "rainbow-button",
+    "name": "Rainbow gradient button",
+    "category": "loop",
+    "target": "element",
+    "params": [
+      {
+        "key": "alpha",
+        "label": "Opacity",
+        "type": "number",
+        "default": 0.6,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "key": "duration",
+        "label": "Duration",
+        "type": "number",
+        "default": 15000,
+        "min": 2000,
+        "max": 40000,
+        "step": 500,
+        "unit": "ms"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "repo": "web-tools-persona-quest (live site)",
+      "file": ".rainbow-gradient-button"
+    }
+  },
+  {
+    "id": "scale",
+    "name": "Grow",
+    "category": "hover",
+    "target": "element",
+    "params": [
+      {
+        "key": "amount",
+        "label": "Scale",
+        "type": "number",
+        "default": 1.05,
+        "min": 1,
+        "max": 1.3,
+        "step": 0.01
+      },
+      {
+        "key": "duration",
+        "label": "Duration",
+        "type": "number",
+        "default": 200,
+        "min": 50,
+        "max": 1000,
+        "step": 10,
+        "unit": "ms"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "builtin": true
+    }
+  },
+  {
+    "id": "scroll-reveal",
+    "name": "Reveal on scroll",
+    "category": "entrance",
+    "target": "element",
+    "params": [
+      {
+        "key": "distance",
+        "label": "Distance",
+        "type": "number",
+        "default": 24,
+        "min": 0,
+        "max": 120,
+        "step": 2,
+        "unit": "px"
+      },
+      {
+        "key": "duration",
+        "label": "Duration",
+        "type": "number",
+        "default": 700,
+        "min": 100,
+        "max": 3000,
+        "step": 50,
+        "unit": "ms"
+      },
+      {
+        "key": "threshold",
+        "label": "Visible %",
+        "type": "number",
+        "default": 15,
+        "min": 0,
+        "max": 100,
+        "step": 5,
+        "unit": "%"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "builtin": true
+    }
+  },
+  {
+    "id": "shimmer",
+    "name": "Shimmer",
+    "category": "loop",
+    "target": "element",
+    "params": [
+      {
+        "key": "color",
+        "label": "Color",
+        "type": "color",
+        "default": "#ffffff"
+      },
+      {
+        "key": "strength",
+        "label": "Strength",
+        "type": "number",
+        "default": 0.35,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "key": "duration",
+        "label": "Duration",
+        "type": "number",
+        "default": 2500,
+        "min": 600,
+        "max": 8000,
+        "step": 100,
+        "unit": "ms"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "builtin": true
+    }
+  },
+  {
+    "id": "shooting-stars",
+    "name": "Shooting stars background",
+    "category": "background",
+    "target": "background",
+    "params": [
+      {
+        "key": "head",
+        "label": "Star color",
+        "type": "color",
+        "default": "#ffffff"
+      },
+      {
+        "key": "tailA",
+        "label": "Tail color 1",
+        "type": "color",
+        "default": "#ff5795"
+      },
+      {
+        "key": "tailB",
+        "label": "Tail color 2",
+        "type": "color",
+        "default": "#ffd856"
+      },
+      {
+        "key": "travel",
+        "label": "Travel",
+        "type": "number",
+        "default": 300,
+        "min": 100,
+        "max": 800,
+        "step": 20,
+        "unit": "px"
+      },
+      {
+        "key": "duration",
+        "label": "Duration",
+        "type": "number",
+        "default": 3000,
+        "min": 1000,
+        "max": 8000,
+        "step": 100,
+        "unit": "ms"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "repo": "making-thinking-visual",
+      "file": "Github-Setup-Starmap/styles.css (.shooting-star); same markup in student-model-gallery/index.html"
+    }
+  },
+  {
+    "id": "slide-up",
+    "name": "Slide up",
+    "category": "entrance",
+    "target": "element",
+    "params": [
+      {
+        "key": "distance",
+        "label": "Distance",
+        "type": "number",
+        "default": 24,
+        "min": 4,
+        "max": 120,
+        "step": 2,
+        "unit": "px"
+      },
+      {
+        "key": "duration",
+        "label": "Duration",
+        "type": "number",
+        "default": 600,
+        "min": 100,
+        "max": 3000,
+        "step": 50,
+        "unit": "ms"
+      },
+      {
+        "key": "delay",
+        "label": "Delay",
+        "type": "number",
+        "default": 0,
+        "min": 0,
+        "max": 3000,
+        "step": 50,
+        "unit": "ms"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "builtin": true
+    }
+  },
+  {
+    "id": "sparkle-field",
+    "name": "Star sparkle field",
+    "category": "background",
+    "target": "background",
+    "params": [
+      {
+        "key": "palette",
+        "label": "Colors",
+        "type": "select",
+        "default": "flower",
+        "options": [
+          "flower",
+          "fairy",
+          "gold"
+        ]
+      },
+      {
+        "key": "bleed",
+        "label": "Spread",
+        "type": "number",
+        "default": 32,
+        "min": 0,
+        "max": 240,
+        "step": 8,
+        "unit": "px"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "repo": "SDSHC-master-dashboard",
+      "file": "src/components/HeroSparkles/HeroSparkles.jsx (+ .css)"
+    }
+  },
+  {
+    "id": "twinkle-background",
+    "name": "Twinkling sparkles background",
+    "category": "background",
+    "target": "background",
+    "params": [
+      {
+        "key": "color",
+        "label": "Sparkle color",
+        "type": "color",
+        "default": "#ffd1f0"
+      },
+      {
+        "key": "count",
+        "label": "Sparkles",
+        "type": "number",
+        "default": 30,
+        "min": 5,
+        "max": 80,
+        "step": 1
+      },
+      {
+        "key": "emojis",
+        "label": "Floating emojis",
+        "type": "text",
+        "default": ""
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "repo": "fairy/fairy-shop",
+      "file": "src/components/AnimatedBackground.jsx"
+    }
+  },
+  {
+    "id": "underline",
+    "name": "Grow underline",
+    "category": "hover",
+    "target": "element",
+    "params": [
+      {
+        "key": "color",
+        "label": "Color",
+        "type": "color",
+        "default": "#c2569b"
+      },
+      {
+        "key": "thickness",
+        "label": "Thickness",
+        "type": "number",
+        "default": 2,
+        "min": 1,
+        "max": 8,
+        "step": 1,
+        "unit": "px"
+      },
+      {
+        "key": "duration",
+        "label": "Duration",
+        "type": "number",
+        "default": 250,
+        "min": 50,
+        "max": 1000,
+        "step": 10,
+        "unit": "ms"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "builtin": true
+    }
+  }
+]

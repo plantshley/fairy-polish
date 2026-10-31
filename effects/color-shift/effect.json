@@ -1,0 +1,34 @@
+{
+  "id": "color-shift",
+  "name": "Color shift",
+  "category": "hover",
+  "target": "element",
+  "params": [
+    {
+      "key": "bg",
+      "label": "Background",
+      "type": "color",
+      "default": "#c2569b"
+    },
+    {
+      "key": "fg",
+      "label": "Text",
+      "type": "color",
+      "default": "#ffffff"
+    },
+    {
+      "key": "duration",
+      "label": "Duration",
+      "type": "number",
+      "default": 200,
+      "min": 50,
+      "max": 1000,
+      "step": 10,
+      "unit": "ms"
+    }
+  ],
+  "respectsReducedMotion": true,
+  "origin": {
+    "builtin": true
+  }
+}

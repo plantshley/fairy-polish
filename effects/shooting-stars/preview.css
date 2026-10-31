@@ -1,0 +1,3 @@
+[data-fp-shooting-star] { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: var(--fp-shooting-stars-head); box-shadow: 0 0 10px 2px var(--fp-shooting-stars-glow); opacity: 0; animation: fp-shooting-star var(--fp-shooting-stars-duration) ease-in-out infinite; }
+[data-fp-shooting-star]::before { content: ""; position: absolute; top: 50%; margin-top: -1px; width: 100px; height: 2px; background: var(--fp-shooting-stars-tail); }
+@keyframes fp-shooting-star { 0% { opacity: 0; transform: translate(0, 0) rotate(-45deg); } 10% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(calc(-1 * var(--fp-shooting-stars-travel)), var(--fp-shooting-stars-travel)) rotate(-45deg); } }

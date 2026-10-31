@@ -1,0 +1,32 @@
+{
+  "id": "fade-in",
+  "name": "Fade in",
+  "category": "entrance",
+  "target": "element",
+  "params": [
+    {
+      "key": "duration",
+      "label": "Duration",
+      "type": "number",
+      "default": 600,
+      "min": 100,
+      "max": 3000,
+      "step": 50,
+      "unit": "ms"
+    },
+    {
+      "key": "delay",
+      "label": "Delay",
+      "type": "number",
+      "default": 0,
+      "min": 0,
+      "max": 3000,
+      "step": 50,
+      "unit": "ms"
+    }
+  ],
+  "respectsReducedMotion": true,
+  "origin": {
+    "builtin": true
+  }
+}

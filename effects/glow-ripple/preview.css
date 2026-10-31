@@ -1,0 +1,4 @@
+[data-fp-layer="glow-ripple"], [data-fp-layer="glow-ripple"]::before, [data-fp-layer="glow-ripple"]::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: 0 0 0 0 var(--fp-glow-ripple-c); animation: fp-glow-ripple var(--fp-glow-ripple-duration) linear infinite var(--fp-ripple-delay, 0s); }
+[data-fp-layer="glow-ripple"]::before { --fp-ripple-delay: calc(var(--fp-glow-ripple-duration) / 3); }
+[data-fp-layer="glow-ripple"]::after { --fp-ripple-delay: calc(var(--fp-glow-ripple-duration) * 2 / 3); }
+@keyframes fp-glow-ripple { to { box-shadow: 0 0 0 var(--fp-glow-ripple-size) transparent; } }

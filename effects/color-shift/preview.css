@@ -1,0 +1,2 @@
+[data-fp-fx~="color-shift"] { transition: background-color var(--fp-color-shift-duration) ease, color var(--fp-color-shift-duration) ease; }
+[data-fp-fx~="color-shift"]:is(:hover, [data-fp-demo]) { background-color: var(--fp-color-shift-bg); color: var(--fp-color-shift-fg); }

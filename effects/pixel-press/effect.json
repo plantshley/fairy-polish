@@ -1,0 +1,29 @@
+{
+  "id": "pixel-press",
+  "name": "Pixel press button",
+  "category": "hover",
+  "target": "element",
+  "params": [
+    {
+      "key": "border",
+      "label": "Border color",
+      "type": "color",
+      "default": "#4a2545"
+    },
+    {
+      "key": "offset",
+      "label": "Shadow offset",
+      "type": "number",
+      "default": 3,
+      "min": 1,
+      "max": 8,
+      "step": 1,
+      "unit": "px"
+    }
+  ],
+  "respectsReducedMotion": true,
+  "origin": {
+    "repo": "fairy/fairy-shop",
+    "file": "src/styles/pixel.css (.pxbtn)"
+  }
+}

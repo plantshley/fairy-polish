@@ -1,0 +1,38 @@
+{
+  "id": "underline",
+  "name": "Grow underline",
+  "category": "hover",
+  "target": "element",
+  "params": [
+    {
+      "key": "color",
+      "label": "Color",
+      "type": "color",
+      "default": "#c2569b"
+    },
+    {
+      "key": "thickness",
+      "label": "Thickness",
+      "type": "number",
+      "default": 2,
+      "min": 1,
+      "max": 8,
+      "step": 1,
+      "unit": "px"
+    },
+    {
+      "key": "duration",
+      "label": "Duration",
+      "type": "number",
+      "default": 250,
+      "min": 50,
+      "max": 1000,
+      "step": 10,
+      "unit": "ms"
+    }
+  ],
+  "respectsReducedMotion": true,
+  "origin": {
+    "builtin": true
+  }
+}

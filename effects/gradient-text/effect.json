@@ -1,0 +1,33 @@
+{
+  "id": "gradient-text",
+  "name": "Gradient text",
+  "category": "loop",
+  "target": "element",
+  "params": [
+    {
+      "key": "palette",
+      "label": "Palette",
+      "type": "select",
+      "default": "cyan-purple",
+      "options": [
+        "cyan-purple",
+        "rainbow"
+      ]
+    },
+    {
+      "key": "duration",
+      "label": "Duration",
+      "type": "number",
+      "default": 8000,
+      "min": 1000,
+      "max": 20000,
+      "step": 500,
+      "unit": "ms"
+    }
+  ],
+  "respectsReducedMotion": true,
+  "origin": {
+    "repo": "web-tools-persona-quest (live site) and SDSHC-games-hub",
+    "file": ".animate-gradient title (persona quest); src/styles/intro.css .intro-btn-label (games-hub)"
+  }
+}

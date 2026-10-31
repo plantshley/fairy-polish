@@ -1,0 +1,37 @@
+{
+  "id": "cursor-sparkles",
+  "name": "Cursor sparkle trail",
+  "category": "cursor",
+  "target": "element",
+  "params": [
+    {
+      "key": "a",
+      "label": "Color 1",
+      "type": "color",
+      "default": "#ff8fc7"
+    },
+    {
+      "key": "b",
+      "label": "Color 2",
+      "type": "color",
+      "default": "#b89bff"
+    },
+    {
+      "key": "c",
+      "label": "Color 3",
+      "type": "color",
+      "default": "#ffd86b"
+    },
+    {
+      "key": "pastel",
+      "label": "Random pastels instead",
+      "type": "boolean",
+      "default": false
+    }
+  ],
+  "respectsReducedMotion": true,
+  "origin": {
+    "repo": "fairy/fairy-shop",
+    "file": "src/components/CursorSparkles.jsx"
+  }
+}

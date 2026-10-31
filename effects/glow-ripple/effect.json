@@ -1,0 +1,48 @@
+{
+  "id": "glow-ripple",
+  "name": "Glowing pulse (ripple)",
+  "category": "loop",
+  "target": "element",
+  "params": [
+    {
+      "key": "color",
+      "label": "Color",
+      "type": "color",
+      "default": "#4ae8e0"
+    },
+    {
+      "key": "strength",
+      "label": "Strength",
+      "type": "number",
+      "default": 0.3,
+      "min": 0.05,
+      "max": 1,
+      "step": 0.05
+    },
+    {
+      "key": "size",
+      "label": "Reach",
+      "type": "number",
+      "default": 80,
+      "min": 20,
+      "max": 200,
+      "step": 5,
+      "unit": "px"
+    },
+    {
+      "key": "duration",
+      "label": "Duration",
+      "type": "number",
+      "default": 4000,
+      "min": 1000,
+      "max": 10000,
+      "step": 100,
+      "unit": "ms"
+    }
+  ],
+  "respectsReducedMotion": true,
+  "origin": {
+    "repo": "SDSHC-games-hub",
+    "file": "src/styles/intro.css (.intro-ripple on .intro-mode-btn)"
+  }
+}

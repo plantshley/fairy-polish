@@ -1,0 +1,2 @@
+[data-fp-fx~="scroll-reveal"] { opacity: 0; transform: translateY(var(--fp-scroll-reveal-distance)); transition: opacity var(--fp-scroll-reveal-duration) ease, transform var(--fp-scroll-reveal-duration) cubic-bezier(.2,.7,.2,1); }
+[data-fp-fx~="scroll-reveal"][data-fp-revealed] { opacity: 1; transform: none; }

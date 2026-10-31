@@ -1,0 +1,32 @@
+{
+  "id": "lift",
+  "name": "Lift",
+  "category": "hover",
+  "target": "element",
+  "params": [
+    {
+      "key": "distance",
+      "label": "Distance",
+      "type": "number",
+      "default": 4,
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "unit": "px"
+    },
+    {
+      "key": "duration",
+      "label": "Duration",
+      "type": "number",
+      "default": 200,
+      "min": 50,
+      "max": 1000,
+      "step": 10,
+      "unit": "ms"
+    }
+  ],
+  "respectsReducedMotion": true,
+  "origin": {
+    "builtin": true
+  }
+}
