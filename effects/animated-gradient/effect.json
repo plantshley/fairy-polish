@@ -4,44 +4,9 @@
   "category": "background",
   "target": "background",
   "params": [
-    {
-      "key": "a",
-      "label": "Color 1",
-      "type": "color",
-      "default": "#ffd6e8"
-    },
-    {
-      "key": "b",
-      "label": "Color 2",
-      "type": "color",
-      "default": "#d6e4ff"
-    },
-    {
-      "key": "c",
-      "label": "Color 3",
-      "type": "color",
-      "default": "#e8d6ff"
-    },
-    {
-      "key": "angle",
-      "label": "Angle",
-      "type": "number",
-      "default": 135,
-      "min": 0,
-      "max": 360,
-      "step": 5,
-      "unit": "deg"
-    },
-    {
-      "key": "duration",
-      "label": "Duration",
-      "type": "number",
-      "default": 15000,
-      "min": 2000,
-      "max": 40000,
-      "step": 500,
-      "unit": "ms"
-    }
+    { "key": "palette", "label": "Colors", "type": "palette", "default": "pastel" },
+    { "key": "angle", "label": "Angle", "type": "number", "default": 135, "min": 0, "max": 360, "step": 5, "unit": "deg" },
+    { "key": "duration", "label": "Duration", "type": "number", "default": 15000, "min": 2000, "max": 40000, "step": 500, "unit": "ms" }
   ],
   "respectsReducedMotion": true,
   "origin": {

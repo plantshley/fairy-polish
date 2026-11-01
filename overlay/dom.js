@@ -24,6 +24,13 @@ function append(el, children) {
   }
 }
 
+// el.append() that skips null/false the way h() does (native append would
+// print them as text).
+export function put(el, ...children) {
+  append(el, children)
+  return el
+}
+
 export function clear(el) {
   while (el.firstChild) el.firstChild.remove()
   return el

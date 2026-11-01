@@ -18,6 +18,11 @@ export async function loadCatalog() {
   return catalog
 }
 
+export function loadCatalogSync() {
+  if (!catalog) loadCatalog()
+  return catalog
+}
+
 export function effectMeta(id) {
   return catalog?.find((e) => e.id === id) || null
 }
@@ -49,6 +54,13 @@ export async function loadEffect(id, roots) {
   for (const r of roots) injectCss(r, id, text)
   if (!modules.has(id)) modules.set(id, import(/* @vite-ignore */ `${base}/effects/${id}/preview.js`).then((m) => m.default))
   return modules.get(id)
+}
+
+// Shared palettes for effects with a palette param (effects/_lib/palettes.js).
+let palettes = null
+export async function loadPalettes() {
+  if (!palettes) palettes = import(/* @vite-ignore */ `${base}/effects/_lib/palettes.js`).then((m) => m.PALETTES).catch(() => ({}))
+  return palettes
 }
 
 export function defaultsFor(meta) {

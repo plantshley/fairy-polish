@@ -10,8 +10,15 @@ Original: master-dashboard `src/components/HeroSparkles/HeroSparkles.jsx` and `.
 
 ## Params
 
-- `palette` (Colors): select, default `flower`
-- `bleed` (Spread): number, default `32` px
+- `palette` (Colors): a palette name from `effects/_lib/palettes.js` (default `flower`, the original's `FLOWER_SPARKLE_COLORS`), or an array of colors.
+- `spread` (Spread): how far stars travel, as a fraction of the container's half-size. The original's fixed speeds (`move.speed` 1-3 with the absorber) are roughly `spread` 0.6 on a 300px hero. In tsparticles, scale `move.speed` with the container size.
+- `speed` (Speed): time multiplier, default `1`.
+- `density` (Stars): max particles alive, default `30` (the original's emitter limit). Emit about a quarter of it per burst.
+- `size` (Star size): max star radius in px, default `5`; min is 40% of it.
+- `origin` (Burst from): `center` (the original: one emitter in the middle) or `scattered` (each burst from a random point, for large backgrounds).
+- `bleed` (Overflow): px the canvas extends past the element, default `32`.
+
+The layer sits behind the content: first child, `z-index: -1`, and `isolation: isolate` on the container so it stays above the container's background.
 
 The change file gives the values the user chose. Map colors to the project's existing tokens when one matches.
 

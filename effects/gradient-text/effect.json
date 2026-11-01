@@ -1,29 +1,12 @@
 {
   "id": "gradient-text",
-  "name": "Gradient text",
+  "name": "Animated gradient text",
   "category": "loop",
   "target": "element",
   "params": [
-    {
-      "key": "palette",
-      "label": "Palette",
-      "type": "select",
-      "default": "cyan-purple",
-      "options": [
-        "cyan-purple",
-        "rainbow"
-      ]
-    },
-    {
-      "key": "duration",
-      "label": "Duration",
-      "type": "number",
-      "default": 8000,
-      "min": 1000,
-      "max": 20000,
-      "step": 500,
-      "unit": "ms"
-    }
+    { "key": "palette", "label": "Colors", "type": "palette", "default": "cyan-purple" },
+    { "key": "angle", "label": "Angle", "type": "number", "default": 90, "min": 0, "max": 360, "step": 5, "unit": "deg" },
+    { "key": "duration", "label": "Duration", "type": "number", "default": 8000, "min": 1000, "max": 20000, "step": 500, "unit": "ms" }
   ],
   "respectsReducedMotion": true,
   "origin": {

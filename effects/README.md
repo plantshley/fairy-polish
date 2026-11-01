@@ -31,7 +31,8 @@ effects/<id>/
 - `id` matches the folder name, in kebab-case.
 - `category`: `hover`, `click`, `entrance`, `loop`, `background`, or `cursor`.
 - `target`: `element`, or `background` for effects that fill a container.
-- Param `type`: `color`, `number` (with `min`, `max`, `step`, and optional `unit`), `select` (with `options`), `boolean`, or `text`.
+- Param `type`: `color`, `number` (with `min`, `max`, `step`, and optional `unit`), `select` (with `options`), `boolean`, `text`, or `palette` (a name from `_lib/palettes.js`, or an array of colors when the user picks custom; resolve it with `colorsOf()`).
+- `detect` (optional): `{ "keyframes": ["name", ...] }`, the original's keyframe names. The editor uses them to mark a site's existing effect as already in the gallery.
 - `origin`: `{ "builtin": true }`, `{ "repo", "file" }`, or `{ "url", "license" }`. An effect from a URL needs a license that allows reuse.
 
 ### preview.js
@@ -40,7 +41,8 @@ effects/<id>/
 - Wrap the body with `tidy(el, () => run(el, params))` and return the cleanup. The cleanup must restore the element exactly: attributes, inline styles, children, listeners, timers, and animation frames.
 - Tag the element with `tag(el, id)`. The attribute is a space-separated list, so select it in CSS with `[data-fp-fx~="<id>"]`.
 - Pass params as `--fp-<id>-<key>` variables with `vars(el, id, params, units)`.
-- Decorations go in a child `layer(el, id, { clip, bleed, z })`. `positioned(el)` makes a static element `relative` and restores it afterwards.
+- Decorations go in a child `layer(el, id, { clip, bleed, z, behind })`. Background effects pass `behind: true`: the layer becomes the first child at `z-index: -1` and the element gets `isolation: isolate`, so the layer sits above the element's background and below its content. `positioned(el)` makes a static element `relative` and restores it afterwards.
+- When the user picks "text only", the editor runs `apply()` on a span wrapped around the element's own text instead of the element itself. Nothing special is needed in `preview.js`.
 - Hover and click effects should also respond to the gallery's demo. CSS effects match `:is(:hover, [data-fp-demo])`; scripted effects listen through `onDemo(el, start, stop)`.
 - Honor `prefers-reduced-motion`: skip the motion or render a still version.
 

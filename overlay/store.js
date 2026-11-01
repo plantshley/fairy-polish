@@ -117,13 +117,17 @@ export function clearAll() {
 }
 
 export function removeChange(id) {
+  removeChanges([id])
+}
+
+export function removeChanges(ids) {
+  const set = new Set(ids)
   commit((ch) => {
-    const i = ch.findIndex((c) => c.id === id)
-    if (i >= 0) ch.splice(i, 1)
+    for (let i = ch.length - 1; i >= 0; i--) if (set.has(ch[i].id)) ch.splice(i, 1)
     // Mirrored values go with the edit that produced them; pinned ones stay.
     for (let j = ch.length - 1; j >= 0; j--) {
       const p = ch[j]
-      if (p.mirrorOf !== id) continue
+      if (!set.has(p.mirrorOf)) continue
       for (const [k, v] of Object.entries(p.props)) if (v.mirrored) delete p.props[k]
       if (!Object.keys(p.props).length) ch.splice(j, 1)
     }
@@ -136,8 +140,12 @@ export function targetKey(t) {
   return 'id:' + t.fpId
 }
 
+function variant(t) {
+  return (t.part === 'text' ? '|text' : '') + (t.state ? '|' + t.state : '') + (t.pseudo || '')
+}
+
 function bucketKey(target, media, theme) {
-  return targetKey(target) + '|' + (media.query || 'all') + '|' + theme
+  return targetKey(target) + variant(target) + '|' + (media.query || 'all') + '|' + theme
 }
 
 export function findStyle(changes, target, media, theme) {
@@ -156,7 +164,7 @@ export function upsertStyle(changes, target, media, theme, prop, value, extra = 
   const prev = c.props[prop]
   const from = prev ? prev.from : value.from
   if (value.to === from && !value.toToken) delete c.props[prop]
-  else c.props[prop] = { from, to: value.to, ...(value.toToken ? { toToken: value.toToken } : {}), ...(value.mirrored ? { mirrored: true } : {}) }
+  else c.props[prop] = { from, to: value.to, ...(value.toToken ? { toToken: value.toToken } : {}), ...(value.mirrored ? { mirrored: true } : {}), ...(value.fontUrl ? { fontUrl: value.fontUrl } : {}) }
   if (!Object.keys(c.props).length) changes.splice(changes.indexOf(c), 1)
   return c
 }

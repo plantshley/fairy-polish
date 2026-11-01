@@ -10,6 +10,7 @@ A clipped overlay (`::after` on the element, with `position: relative; overflow:
 
 ## Params
 
+- `trigger` (When): `loop` sweeps continuously; `hover` hides the band at rest and sweeps only while the element is hovered (and on keyboard focus, when porting).
 - `color` (Color): color, default `#ffffff`
 - `strength` (Strength): number, default `0.35`
 - `duration` (Duration): number, default `2500` ms

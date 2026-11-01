@@ -34,13 +34,26 @@ export async function verify(file, doc = view.doc) {
         result.skipped.push({ id: c.id, reason: `theme: needs ${t.theme}` })
         continue
       }
-      const el = resolve(t, doc)
+      if (c.type === 'galleryAdd' || c.type === 'name') {
+        result.skipped.push({ id: c.id, reason: `${c.type}: nothing to check on the page` })
+        continue
+      }
+      if (c.type === 'replace') {
+        result.skipped.push({ id: c.id, reason: 'replace: check by eye, or grep the CSS for the old value' })
+        continue
+      }
+      if (t.state === 'hover') {
+        result.skipped.push({ id: c.id, reason: ':hover: hover the element and check by eye' })
+        continue
+      }
+      let el = resolve(t, doc)
+      if (el && t.part === 'text') el = el.firstElementChild && el.children.length === 1 ? el.firstElementChild : el
       if (!el) {
         result.notFound.push({ id: c.id, selector: t.selector, text: t.text })
         continue
       }
       if (c.type === 'style') {
-        const cs = win.getComputedStyle(el)
+        const cs = win.getComputedStyle(el, t.pseudo || null)
         const bad = []
         for (const [p, v] of Object.entries(c.props)) {
           if (v.computed == null) continue

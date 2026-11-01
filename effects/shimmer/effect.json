@@ -5,6 +5,16 @@
   "target": "element",
   "params": [
     {
+      "key": "trigger",
+      "label": "When",
+      "type": "select",
+      "default": "loop",
+      "options": [
+        "loop",
+        "hover"
+      ]
+    },
+    {
       "key": "color",
       "label": "Color",
       "type": "color",

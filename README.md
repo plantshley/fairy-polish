@@ -22,21 +22,31 @@ New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\skills\fairy-polish"
 
 | Do | How |
 | --- | --- |
-| Select | Click. Alt+click selects the parent; the breadcrumb row picks any ancestor. |
-| Resize | Drag the handles on the selection box. |
+| Select | Click. Alt+click selects the parent. The breadcrumb row picks any ancestor. |
+| Use the page | ☞ in the header lets clicks reach links and buttons. Click it again to go back to selecting. |
+| Collapse / resize the panel | ▾ shrinks the panel to a pill and keeps your edits showing. Drag the panel's inner edge to change its width. |
+| Resize an element | Drag any of the 8 handles on the selection box. |
 | Reorder | Drag ⠿ on the selection label and drop on the indicator line. |
 | Move freely | Shift+drag ⠿. Saved as approximate; the agent picks a responsive equivalent. |
-| Edit text | Double-click the selected element. Enter saves, Esc cancels. |
+| Edit text | Double-click the selected element (Enter saves, Esc cancels), or use the Text section. |
 | Undo / redo | Ctrl+Z / Ctrl+Shift+Z (or the footer buttons). |
 | Deselect / close | Esc / Alt+Shift+E. |
 
-**Screen sizes.** Desktop, tablet, and mobile load the page in a sized frame so the site's real media queries run. ⟲ swaps portrait and landscape. "Applies to" scopes new edits: all sizes, this size only, this size and smaller, or this size and larger, using the site's own breakpoints. Tick the orientation box to limit an edit to portrait or landscape.
+**Screen sizes.** "Edits for" picks which sizes new edits apply to: all sizes, or one of the site's own size ranges (named mobile, tablet, desktop, and so on, from its breakpoints; 640 and 1024 when it has none), plus an optional orientation. Picking a range also shows the page at a size inside it, in a frame, so the site's real media queries run. "Viewing" sets any other size to look at.
 
-**Scope.** Edits apply to this element only, every instance of its component (same JSX line), or every element with its classes.
+**Applies to.** Just this element, every copy of it (everything rendered by the same line of code, such as each card in a list), or every element with its classes. The counts show how many are on the page.
+
+**Element or text.** "Edit the: text only" makes styles and effects apply only where the element's own text is (a highlight behind the words), not to the whole box. Double-clicking text switches to it.
+
+**Theme tab.** Site-wide edits. Design tokens (custom properties on `:root`) change at the source. Colors and fonts without a token are replaced in every CSS rule that uses them. Edits on the Edit tab still win.
 
 **Light and dark.** When the site has a dark theme, the ☀/☾ button switches the page. A color edit in one theme is mirrored into the other with farm-budget's theme lab model. Edit a mirrored value to pin it. Picking a design token instead of a raw color skips mirroring, since the token already covers both themes.
 
-**Effects.** The Effects tab is a gallery with live thumbnails. Hover a card to preview it on the selection, click to attach, then tune its params. "Custom tag" records a description for anything the gallery lacks. The ⓘ button explains how to add effects and has a prompt to copy.
+**Existing effects.** When the selected element already has CSS animations, transitions, or `:hover` rules, the Edit tab lists them so you can change their timing, pause or remove them, or edit the hover values. "+ gallery" queues one to be ported into the effects gallery when the agent applies the file.
+
+**Effects.** The Effects tab is a gallery with live thumbnails. Hover a card to preview it on the selection, click to attach, then tune its params on the Edit tab. Palettes have a custom option with as many colors as you want. "Custom tag" records a description for anything the gallery lacks. The ⓘ button explains how to add effects and has a prompt to copy.
+
+**Changes tab.** Grouped by type (or by screen size). Tick changes to discard several at once.
 
 Edits persist in localStorage per site until you clear them, or until the agent applies the saved file.
 

@@ -7,7 +7,7 @@ import { state, uiChanged } from './state.js'
 import { view, topRect, onDocChange } from './view.js'
 import { setStyle, setText, targetFor, currentMedia, currentSize } from './edit.js'
 import { commit, nextId } from './store.js'
-import { singleTextNode } from './preview.js'
+import { singleTextNode, unwrapText } from './preview.js'
 import { ownText } from './locate.js'
 
 let root
@@ -28,9 +28,7 @@ export function initSelect(container) {
     'div',
     { class: 'fp-box sel', hidden: true },
     h('div', { class: 'fp-tag' }, grip, h('span', { class: 'fp-tagtext' })),
-    h('div', { class: 'fp-h e', 'data-dir': 'e' }),
-    h('div', { class: 'fp-h s', 'data-dir': 's' }),
-    h('div', { class: 'fp-h se', 'data-dir': 'se' }),
+    ...['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'].map((d) => h('div', { class: 'fp-h ' + d, 'data-dir': d })),
   )
   dropLine = h('div', { class: 'fp-drop', hidden: true })
   dropBox = h('div', { class: 'fp-drop-box', hidden: true })
@@ -74,20 +72,28 @@ const HANDLERS = [
   ['contextmenu', block],
 ]
 
+// In interact mode the page gets its clicks; the editor only keeps drawing.
+function live() {
+  return state.active && !state.interact && !state.collapsed
+}
+
 function block(e) {
-  if (!state.active || isEditor(e) || editing) return
+  if (!live() || isEditor(e) || editing) return
   e.preventDefault()
   e.stopPropagation()
 }
 
 function onMove(e) {
-  if (!state.active || isEditor(e) || drag) return
+  if (!live() || isEditor(e) || drag) {
+    if (!live()) state.hovered = null
+    return
+  }
   const t = e.target
   state.hovered = pickable(t) ? t : null
 }
 
 function onClick(e) {
-  if (!state.active || isEditor(e) || editing) return
+  if (!live() || isEditor(e) || editing) return
   e.preventDefault()
   e.stopPropagation()
   let t = e.target
@@ -97,20 +103,28 @@ function onClick(e) {
 }
 
 export function select(el) {
+  if (el !== state.selected) state.part = 'element'
   state.selected = el
   uiChanged('selection')
 }
 
 function onDbl(e) {
-  if (!state.active || isEditor(e)) return
+  if (!live() || isEditor(e)) return
   e.preventDefault()
   e.stopPropagation()
   const el = state.selected
-  if (!el || !(singleTextNode(el) || (!el.children.length && el.textContent.trim()))) return
+  if (!el) return
+  unwrapText(el.ownerDocument)
+  if (!(singleTextNode(el) || (!el.children.length && el.textContent.trim()))) return
   startTextEdit(el)
 }
 
-function startTextEdit(el) {
+// Double-click: edit the text in place, and switch the panel to the text so
+// style edits that follow apply to it.
+export function startTextEdit(el) {
+  unwrapText(el.ownerDocument)
+  state.part = 'text'
+  uiChanged('selection')
   const original = el.textContent
   const node = singleTextNode(el)
   const originalNode = node?.nodeValue
@@ -133,6 +147,7 @@ function startTextEdit(el) {
     } else el.textContent = original
     editing = null
     if (save && next !== original) setText(el, original.trim(), next.trim())
+    else uiChanged('rerender')
   }
   const onBlur = () => finish(true)
   const onKey = (e) => {
@@ -152,12 +167,29 @@ function startTextEdit(el) {
 
 /* ── drawing ────────────────────────────────────────────────────────────── */
 
-function place(box, el) {
+// The part of the window the page shows: everything but the panel.
+function visibleArea() {
+  const pw = state.collapsed ? 0 : state.panelW
+  const left = state.dock === 'left' ? pw : 0
+  return { left, top: 0, right: innerWidth - (state.dock === 'left' ? 0 : pw), bottom: innerHeight }
+}
+
+function place(box, el, clip) {
   if (!el || !el.isConnected) {
     box.hidden = true
     return null
   }
-  const r = topRect(el)
+  let r = topRect(el)
+  if (clip) {
+    // Keep the box (and its handles) on screen when the element runs past
+    // the window or under the panel.
+    const v = visibleArea()
+    const l = Math.max(r.left, v.left + 2)
+    const t = Math.max(r.top, v.top + 2)
+    const rr = Math.min(r.right, v.right - 2)
+    const b = Math.min(r.bottom, v.bottom - 2)
+    if (rr > l && b > t) r = new DOMRect(l, t, rr - l, b - t)
+  }
   box.hidden = false
   Object.assign(box.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' })
   box.querySelector('.fp-tag')?.classList.toggle('below', r.top < 18)
@@ -172,13 +204,13 @@ function tagText(el) {
 
 function loop() {
   requestAnimationFrame(loop)
-  if (!state.active) {
+  if (!state.active || state.collapsed) {
     hoverBox.hidden = selBox.hidden = true
     return
   }
   const hov = state.hovered !== state.selected ? state.hovered : null
   if (place(hoverBox, drag ? null : hov)) hoverBox.querySelector('.fp-tag').textContent = tagText(hov)
-  if (place(selBox, state.selected)) selBox.querySelector('.fp-tagtext').textContent = tagText(state.selected)
+  if (place(selBox, state.selected, true)) selBox.querySelector('.fp-tagtext').textContent = tagText(state.selected)
 }
 
 /* ── resize ─────────────────────────────────────────────────────────────── */
@@ -197,8 +229,10 @@ function startResize(e) {
   const move = (ev) => {
     const dx = (ev.clientX - x0) / view.scale
     const dy = (ev.clientY - y0) / view.scale
-    if (dir.includes('e')) setStyle(el, 'width', Math.max(1, Math.round(r.width + dx)) + 'px', { mergeKey: 'resize' })
-    if (dir.includes('s')) setStyle(el, 'height', Math.max(1, Math.round(r.height + dy)) + 'px', { mergeKey: 'resize' })
+    const sx = dir.includes('e') ? 1 : dir.includes('w') ? -1 : 0
+    const sy = dir.includes('s') ? 1 : dir.includes('n') ? -1 : 0
+    if (sx) setStyle(el, 'width', Math.max(1, Math.round(r.width + sx * dx)) + 'px', { mergeKey: 'resize', part: 'element' })
+    if (sy) setStyle(el, 'height', Math.max(1, Math.round(r.height + sy * dy)) + 'px', { mergeKey: 'resize', part: 'element' })
   }
   const up = () => {
     handle.removeEventListener('pointermove', move)

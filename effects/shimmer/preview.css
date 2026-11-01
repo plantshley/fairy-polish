@@ -1,2 +1,5 @@
 [data-fp-layer="shimmer"]::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, var(--fp-shimmer-tint) 50%, transparent 70%); background-size: 250% 100%; animation: fp-shimmer var(--fp-shimmer-duration) linear infinite; }
+/* Hover mode: hidden at rest, sweeping while hovered. */
+[data-fp-layer="shimmer"][data-fp-shimmer-hover]::after { opacity: 0; animation-play-state: paused; transition: opacity .2s ease; }
+:is(:hover, [data-fp-demo]) > [data-fp-layer="shimmer"][data-fp-shimmer-hover]::after { opacity: 1; animation-play-state: running; }
 @keyframes fp-shimmer { from { background-position: 150% 0; } to { background-position: -100% 0; } }

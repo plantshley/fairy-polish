@@ -1,11 +1,5 @@
 import { tag, vars, all, tidy } from '../_lib/util.js'
-
-const PALETTES = {
-  // Persona quest title: Tailwind cyan-400 → purple-400 → cyan-400, 200% wide.
-  'cyan-purple': 'linear-gradient(to right, #22d3ee, #c084fc, #22d3ee)',
-  // Games-hub mode buttons.
-  rainbow: 'linear-gradient(90deg, #ff6b6b, #ffa36b, #ffd93d, #6bcf7f, #6bb5ff, #a36bff, #ff6b6b)',
-}
+import { colorsOf } from '../_lib/palettes.js'
 
 export default function apply(el, params) {
   return tidy(el, () => run(el, params))
@@ -13,5 +7,9 @@ export default function apply(el, params) {
 
 function run(el, params) {
   const id = 'gradient-text'
-  return all(tag(el, id), vars(el, id, { duration: params.duration, image: PALETTES[params.palette] || PALETTES['cyan-purple'], size: params.palette === 'rainbow' ? '300% 100%' : '200% auto', to: params.palette === 'rainbow' ? '300% 50%' : '100% 50%' }, { duration: 'ms' }))
+  const colors = colorsOf(params.palette, 'cyan-purple')
+  // The first color repeats at the end so the sweep loops without a seam.
+  const image = `linear-gradient(${params.angle ?? 90}deg, ${[...colors, colors[0]].join(', ')})`
+  const wide = colors.length > 3
+  return all(tag(el, id), vars(el, id, { duration: params.duration, image, size: wide ? '300% 300%' : '200% 200%', to: '100% 100%' }, { duration: 'ms' }))
 }

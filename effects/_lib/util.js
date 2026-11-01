@@ -40,12 +40,25 @@ export function positioned(el) {
 
 // An absolutely positioned child layer. `clip` hides overflow (shine);
 // without it, content may spill past the element (ripples, bursts).
-export function layer(el, id, { clip = true, bleed = 0, z = 0 } = {}) {
+// `behind` puts it under the element's content: first child at z-index -1,
+// with the element made its own stacking context (isolation: isolate) so the
+// layer stays above the element's background instead of sinking below it.
+export function layer(el, id, { clip = true, bleed = 0, z = 0, behind = false } = {}) {
   const d = el.ownerDocument.createElement('span')
   d.setAttribute('data-fp-layer', id)
   d.setAttribute('aria-hidden', 'true')
-  d.style.cssText = `position:absolute;inset:${-bleed}px;pointer-events:none;border-radius:inherit;z-index:${z};${clip ? 'overflow:hidden;' : ''}`
-  el.append(d)
+  d.style.cssText = `position:absolute;inset:${-bleed}px;pointer-events:none;border-radius:inherit;z-index:${behind ? -1 : z};${clip ? 'overflow:hidden;' : ''}`
+  if (behind) {
+    const prev = el.style.isolation
+    el.style.isolation = 'isolate'
+    el.prepend(d)
+    d.release = () => (el.style.isolation = prev)
+  } else el.append(d)
+  const remove = d.remove.bind(d)
+  d.remove = () => {
+    remove()
+    d.release?.()
+  }
   return d
 }
 

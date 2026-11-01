@@ -1,18 +1,19 @@
 // Edit actions: turn "set this property on this element" into a change record
-// scoped by the current size, theme, and scope settings, and mirror color
-// edits into the other theme.
+// scoped by the current size, theme, scope, and part settings, and mirror
+// color edits into the other theme.
 
 import { commit, upsertStyle, findStyle, nextId, getChanges } from './store.js'
 import { fpId, locatorFor } from './locate.js'
 import { state } from './state.js'
 import { view, viewportSize } from './view.js'
-import { mediaFor } from './media.js'
+import { mediaFor, bands } from './media.js'
 import { THEMED_PROPS, currentTheme, setTheme, releaseTheme } from './theme.js'
-import { withPreviewOff } from './preview.js'
+import { withPreviewOff, textWrapper, hasOwnText, wrapText } from './preview.js'
 import { matchToken, normalizeColor } from './tokens.js'
 import { mirror, parseColor } from './mirror.js'
 
-export function targetFor(el, scope = state.scope) {
+// opts: { scope, part, pseudo, state } override the panel's settings.
+export function targetFor(el, scope = state.scope, opts = {}) {
   const loc = locatorFor(el)
   const t = { ...loc, fpId: fpId(el), scope }
   if (scope === 'component' && !t.source) t.scope = 'instance'
@@ -20,64 +21,101 @@ export function targetFor(el, scope = state.scope) {
     if (loc.classes.length) t.classSelector = '.' + loc.classes.join('.')
     else t.scope = 'instance'
   }
+  const part = opts.part ?? state.part
+  if (part === 'text' && hasOwnText(el)) t.part = 'text'
+  if (opts.pseudo) t.pseudo = opts.pseudo
+  if (opts.state) t.state = opts.state
   const named = getChanges().find((c) => c.type === 'name' && c.target.fpId === t.fpId)
   if (named) t.name = named.name
   return t
+}
+
+// The page's design tokens live on :root; edits to them are site-wide.
+export function rootTarget() {
+  return { kind: 'root', source: null, component: null, selector: ':root', tag: 'html', classes: [], text: '', fpId: 'root', scope: 'selector', classSelector: ':root' }
 }
 
 export function currentSize() {
   return state.frameSize || viewportSize()
 }
 
+export function currentBand() {
+  return state.band == null ? null : bands(state.breakpoints)[state.band] || null
+}
+
 export function currentMedia() {
   const { w, h } = currentSize()
-  return mediaFor({ applyTo: state.applyTo, w, h, bps: state.breakpoints, label: state.preset, orientationOnly: state.orientationOnly })
+  return mediaFor({ band: currentBand(), orient: state.orient, w, h })
+}
+
+export function allMedia() {
+  const { w, h } = currentSize()
+  return mediaFor({ band: null, orient: null, w, h })
 }
 
 export function pageTheme() {
   return currentTheme(view.doc, state.themeMode, state.forcedTheme)
 }
 
-function themeFor(prop, value) {
-  if (!state.themeMode || !THEMED_PROPS.has(prop)) return 'both'
+function themeFor(prop, value, themed) {
+  if (!state.themeMode) return 'both'
+  if (!themed && !THEMED_PROPS.has(prop)) return 'both'
   if (/^var\(--[^)]+\)$/.test(value)) return 'both'
   return pageTheme()
 }
 
-// The value the page ships with, with no preview applied.
-export function shipped(el, prop) {
-  return withPreviewOff(el.ownerDocument, () => el.ownerDocument.defaultView.getComputedStyle(el).getPropertyValue(prop).trim())
+// Runs fn with the node a change styles: the text wrapper in text mode
+// (wrapping for the moment if the preview hasn't yet), else the element.
+function withNode(el, target, fn) {
+  if (target.part !== 'text') return fn(el)
+  const existing = textWrapper(el)
+  if (existing) return fn(existing)
+  const undo = wrapText(el)
+  try {
+    return fn(textWrapper(el) || el)
+  } finally {
+    undo()
+  }
 }
 
-function shippedInTheme(el, prop, theme) {
+// The value the page ships with, with no preview applied.
+export function shipped(el, prop, pseudo = null) {
+  return withPreviewOff(el.ownerDocument, () => el.ownerDocument.defaultView.getComputedStyle(el, pseudo).getPropertyValue(prop).trim())
+}
+
+function shippedInTheme(el, prop, theme, pseudo) {
   const doc = el.ownerDocument
   const before = state.themeMode === 'media' ? state.forcedTheme : pageTheme()
   return withPreviewOff(doc, () => {
     setTheme(doc, state.themeMode, theme)
-    const v = doc.defaultView.getComputedStyle(el).getPropertyValue(prop).trim()
+    const v = doc.defaultView.getComputedStyle(el, pseudo).getPropertyValue(prop).trim()
     if (state.themeMode === 'media' && !before) releaseTheme(doc)
     else setTheme(doc, state.themeMode, before)
     return v
   })
 }
 
+// opts: { mergeKey, token, from, fontUrl, target, media, themed, pseudo, state, part }
 export function setStyle(el, prop, value, opts = {}) {
-  const target = targetFor(el)
-  const media = currentMedia()
-  const theme = themeFor(prop, value)
-  const from = shipped(el, prop)
+  const target = opts.target || targetFor(el, state.scope, opts)
+  const media = opts.media || currentMedia()
+  const theme = themeFor(prop, value, opts.themed)
+  const pseudo = target.pseudo || null
   const tok = opts.token || matchToken(view.doc, state.tokens, value)
   const to = opts.token ? `var(${opts.token})` : value
   let mirrorPlan = null
   const toColor = theme !== 'both' ? normalizeColor(el.ownerDocument, to) : null
-  if (toColor && parseColor(toColor)) {
-    const other = theme === 'light' ? 'dark' : 'light'
-    const shippedTo = shippedInTheme(el, prop, other)
+  const other = theme === 'light' ? 'dark' : 'light'
+  const { from, shippedTo } = withNode(el, target, (node) => ({
+    from: opts.from ?? shipped(node, prop, pseudo),
+    shippedTo: toColor && parseColor(toColor) ? shippedInTheme(node, prop, other, pseudo) : null,
+  }))
+  if (shippedTo != null) {
     const m = mirror({ shippedFrom: from, shippedTo, editedFrom: toColor })
     if (m) mirrorPlan = { other, shippedTo, value: m }
   }
   commit((changes) => {
-    const c = upsertStyle(changes, target, media, theme, prop, { from, to, toToken: tok && !opts.token ? tok : opts.token })
+    const c = upsertStyle(changes, target, media, theme, prop, { from, to, toToken: tok && !opts.token ? tok : opts.token, fontUrl: opts.fontUrl })
     if (!mirrorPlan) return
     const partner = findStyle(changes, target, media, mirrorPlan.other)
     const existing = partner?.props[prop]
@@ -86,18 +124,64 @@ export function setStyle(el, prop, value, opts = {}) {
   }, opts.mergeKey ? opts.mergeKey + '|' + target.fpId : null)
 }
 
-// Current values for the panel: the change set's value for this bucket if
-// there is one, else the computed value.
-export function valueFor(el, prop) {
-  const target = targetFor(el)
-  const c = findStyle(getChanges(), target, currentMedia(), themeFor(prop, ''))
-  const v = c?.props[prop]
-  if (v) return { value: v.to, overridden: true, token: v.toToken, mirrored: v.mirrored }
-  return { value: el.ownerDocument.defaultView.getComputedStyle(el).getPropertyValue(prop).trim(), overridden: false }
+// Several properties as one undo step (gradient text, gradient borders).
+export function setStyles(el, props, opts = {}) {
+  const key = opts.mergeKey || 'multi:' + Object.keys(props).join(',') + ':' + Date.now()
+  for (const [p, v] of Object.entries(props)) setStyle(el, p, v, { ...opts, mergeKey: key })
 }
 
+// Current values for the panel: the change set's value for this bucket if
+// there is one, else the computed value.
+export function valueFor(el, prop, opts = {}) {
+  const target = opts.target || targetFor(el, state.scope, opts)
+  const c = findStyle(getChanges(), target, opts.media || currentMedia(), themeFor(prop, '', opts.themed))
+  const v = c?.props[prop]
+  if (v) return { value: v.to, overridden: true, token: v.toToken, mirrored: v.mirrored }
+  const value = withNode(el, target, (node) => node.ownerDocument.defaultView.getComputedStyle(node, target.pseudo || null).getPropertyValue(prop).trim())
+  return { value, overridden: false }
+}
+
+/* ── site-wide (Theme tab) ──────────────────────────────────────────────── */
+
+export function isColorValue(v) {
+  return !!normalizeColor(view.doc, v)
+}
+
+export function setToken(name, value, opts = {}) {
+  const root = view.doc.documentElement
+  const themed = !!state.themeMode && isColorValue(state.tokens.light[name] || value)
+  setStyle(root, name, value, { ...opts, target: rootTarget(), media: allMedia(), themed })
+}
+
+export function tokenValue(name) {
+  const root = view.doc.documentElement
+  const themed = !!state.themeMode && isColorValue(state.tokens.light[name] || '')
+  return valueFor(root, name, { target: rootTarget(), media: allMedia(), themed })
+}
+
+// Replace one color or font everywhere the site's CSS declares it.
+// kind: 'color' | 'font'
+export function setReplace(kind, from, to, opts = {}) {
+  commit((changes) => {
+    const i = changes.findIndex((c) => c.type === 'replace' && c.kind === kind && c.from === from)
+    const target = { kind: 'site', selector: '*', tag: '*', classes: [], text: '', fpId: 'site', scope: 'selector', media: allMedia() }
+    if (!to || to === from) {
+      if (i >= 0) changes.splice(i, 1)
+      return
+    }
+    if (i >= 0) Object.assign(changes[i], { to, ...(opts.fontUrl ? { fontUrl: opts.fontUrl } : {}) })
+    else changes.push({ id: nextId(), type: 'replace', kind, from, to, target, ...(opts.fontUrl ? { fontUrl: opts.fontUrl } : {}) })
+  }, opts.mergeKey ? opts.mergeKey + '|replace:' + from : null)
+}
+
+export function replaceValue(kind, from) {
+  return getChanges().find((c) => c.type === 'replace' && c.kind === kind && c.from === from)?.to || null
+}
+
+/* ── names, text, effects ───────────────────────────────────────────────── */
+
 export function setName(el, name) {
-  const target = targetFor(el, 'instance')
+  const target = targetFor(el, 'instance', { part: 'element' })
   commit((changes) => {
     const i = changes.findIndex((c) => c.type === 'name' && c.target.fpId === target.fpId)
     if (i >= 0) changes.splice(i, 1)
@@ -107,7 +191,7 @@ export function setName(el, name) {
 }
 
 export function setText(el, from, to) {
-  const target = targetFor(el, 'instance')
+  const target = targetFor(el, 'instance', { part: 'element' })
   commit((changes) => {
     const existing = changes.find((c) => c.type === 'text' && c.target.fpId === target.fpId)
     if (existing) {
@@ -115,6 +199,10 @@ export function setText(el, from, to) {
       else existing.to = to
     } else if (to !== from) changes.push({ id: nextId(), type: 'text', target, from, to })
   })
+}
+
+export function textChangeFor(el) {
+  return getChanges().find((c) => c.type === 'text' && c.target.fpId === el.dataset.fpId) || null
 }
 
 export function addEffect(el, effect, params, note = '') {
@@ -126,6 +214,22 @@ export function addEffect(el, effect, params, note = '') {
 export function updateEffect(id, patch) {
   commit((changes) => {
     const c = changes.find((x) => x.id === id)
-    if (c) Object.assign(c, patch)
+    if (!c) return
+    if (patch.target) {
+      c.target = { ...c.target, ...patch.target }
+      if (!patch.target.part) delete c.target.part
+      delete patch.target
+    }
+    Object.assign(c, patch)
   }, 'fx:' + id)
+}
+
+// An effect the site already has that the gallery lacks: the agent ports it
+// into the fairy-polish gallery from this project's source.
+export function addToGallery(el, fx, name) {
+  const target = targetFor(el, 'instance', { part: 'element' })
+  commit((changes) => {
+    if (changes.some((c) => c.type === 'galleryAdd' && c.target.fpId === target.fpId && c.found.key === fx.key)) return
+    changes.push({ id: nextId(), type: 'galleryAdd', target, name: name || fx.label, found: fx.record })
+  })
 }

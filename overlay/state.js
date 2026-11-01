@@ -19,13 +19,24 @@ export const state = {
   // Screen size: preset key, current frame size (null w = the real window).
   preset: 'desktop',
   frameSize: null,
-  applyTo: 'all',
-  orientationOnly: false,
+  // Which edits apply to: a band index into bands(breakpoints) (null = all
+  // sizes) and an orientation (null = either).
+  band: null,
+  orient: null,
   scope: 'instance',
   breakpoints: [640, 1024],
   themeMode: null,
   forcedTheme: null,
   tokens: { light: {}, dark: {}, colors: [] },
+  // 'element' or 'text': whether edits land on the box or only on its text.
+  part: 'element',
+  // Interact mode: clicks go to the page instead of selecting.
+  interact: false,
+  collapsed: false,
+  panelW: prefs.panelW || 300,
+  // Open/closed state of the Edit tab's sections, by title.
+  sections: prefs.sections || {},
+  changesBy: prefs.changesBy || 'type',
   tab: 'edit',
   editorTheme: prefs.editorTheme || null, // null = follow the OS
   dock: prefs.dock || 'right',
@@ -33,7 +44,7 @@ export const state = {
 
 export function savePrefs() {
   try {
-    localStorage.setItem(PREFS_KEY, JSON.stringify({ editorTheme: state.editorTheme, dock: state.dock }))
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ editorTheme: state.editorTheme, dock: state.dock, panelW: state.panelW, sections: state.sections, changesBy: state.changesBy }))
   } catch {}
 }
 

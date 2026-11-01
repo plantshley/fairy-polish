@@ -7,7 +7,7 @@ export default function apply(el, params) {
 function run(el, params) {
   const id = 'twinkle-background'
   const unpos = positioned(el)
-  const l = layer(el, id, { z: 0 })
+  const l = layer(el, id, { behind: true })
   const doc = el.ownerDocument
   const still = reduced(el)
   for (let i = 0; i < (params.count ?? 30); i++) {

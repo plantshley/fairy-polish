@@ -6,22 +6,10 @@
     "target": "background",
     "params": [
       {
-        "key": "a",
-        "label": "Color 1",
-        "type": "color",
-        "default": "#ffd6e8"
-      },
-      {
-        "key": "b",
-        "label": "Color 2",
-        "type": "color",
-        "default": "#d6e4ff"
-      },
-      {
-        "key": "c",
-        "label": "Color 3",
-        "type": "color",
-        "default": "#e8d6ff"
+        "key": "palette",
+        "label": "Colors",
+        "type": "palette",
+        "default": "pastel"
       },
       {
         "key": "angle",
@@ -48,6 +36,80 @@
     "origin": {
       "repo": "fairy/fairy-shop",
       "file": "src/index.css (.animated-gradient-bg)"
+    }
+  },
+  {
+    "id": "blob-background",
+    "name": "Floating blobs background",
+    "category": "background",
+    "target": "background",
+    "params": [
+      {
+        "key": "palette",
+        "label": "Colors",
+        "type": "palette",
+        "default": "teal-green"
+      },
+      {
+        "key": "opacity",
+        "label": "Strength",
+        "type": "number",
+        "default": 0.7,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "key": "blur",
+        "label": "Blur",
+        "type": "number",
+        "default": 60,
+        "min": 10,
+        "max": 140,
+        "step": 5,
+        "unit": "px"
+      },
+      {
+        "key": "size",
+        "label": "Blob size",
+        "type": "number",
+        "default": 1,
+        "min": 0.4,
+        "max": 2,
+        "step": 0.05,
+        "unit": "×"
+      },
+      {
+        "key": "speed",
+        "label": "Speed",
+        "type": "number",
+        "default": 1,
+        "min": 0.25,
+        "max": 4,
+        "step": 0.05,
+        "unit": "×"
+      },
+      {
+        "key": "glow",
+        "label": "Center glow",
+        "type": "boolean",
+        "default": true
+      }
+    ],
+    "respectsReducedMotion": true,
+    "detect": {
+      "keyframes": [
+        "gbFloat1",
+        "gbFloat2",
+        "gbFloat3",
+        "advFloat1",
+        "advFloat2",
+        "advFloat3"
+      ]
+    },
+    "origin": {
+      "repo": "SDSHC-games-hub and SDSHC-check-in",
+      "file": "games-hub src/styles/advanced.css (.adv-gradient-sphere-*); check-in src/ui/ui.css (.gb-sphere-*, .gb-glow) and GradientBackground.jsx"
     }
   },
   {
@@ -304,20 +366,99 @@
     }
   },
   {
+    "id": "gradient-glow",
+    "name": "Gradient outline glow",
+    "category": "hover",
+    "target": "element",
+    "params": [
+      {
+        "key": "palette",
+        "label": "Colors",
+        "type": "palette",
+        "default": "rainbow"
+      },
+      {
+        "key": "trigger",
+        "label": "When",
+        "type": "select",
+        "default": "hover",
+        "options": [
+          "hover",
+          "always"
+        ]
+      },
+      {
+        "key": "spread",
+        "label": "Spread",
+        "type": "number",
+        "default": 5,
+        "min": 0,
+        "max": 30,
+        "step": 1,
+        "unit": "px"
+      },
+      {
+        "key": "blur",
+        "label": "Blur",
+        "type": "number",
+        "default": 5,
+        "min": 0,
+        "max": 30,
+        "step": 1,
+        "unit": "px"
+      },
+      {
+        "key": "opacity",
+        "label": "Strength",
+        "type": "number",
+        "default": 1,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "key": "duration",
+        "label": "Cycle",
+        "type": "number",
+        "default": 20000,
+        "min": 2000,
+        "max": 60000,
+        "step": 1000,
+        "unit": "ms"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "detect": {
+      "keyframes": [
+        "rainbow-glowing"
+      ]
+    },
+    "origin": {
+      "repo": "fairy/fairy-shop",
+      "file": "src/index.css (.rainbow-glow-card, Glitter Groovy Rainbow theme)"
+    }
+  },
+  {
     "id": "gradient-text",
-    "name": "Gradient text",
+    "name": "Animated gradient text",
     "category": "loop",
     "target": "element",
     "params": [
       {
         "key": "palette",
-        "label": "Palette",
-        "type": "select",
-        "default": "cyan-purple",
-        "options": [
-          "cyan-purple",
-          "rainbow"
-        ]
+        "label": "Colors",
+        "type": "palette",
+        "default": "cyan-purple"
+      },
+      {
+        "key": "angle",
+        "label": "Angle",
+        "type": "number",
+        "default": 90,
+        "min": 0,
+        "max": 360,
+        "step": 5,
+        "unit": "deg"
       },
       {
         "key": "duration",
@@ -334,6 +475,66 @@
     "origin": {
       "repo": "web-tools-persona-quest (live site) and SDSHC-games-hub",
       "file": ".animate-gradient title (persona quest); src/styles/intro.css .intro-btn-label (games-hub)"
+    }
+  },
+  {
+    "id": "grid-layer",
+    "name": "Subtle grid layer",
+    "category": "background",
+    "target": "background",
+    "params": [
+      {
+        "key": "color",
+        "label": "Line color",
+        "type": "color",
+        "default": "#5b7a8c"
+      },
+      {
+        "key": "opacity",
+        "label": "Strength",
+        "type": "number",
+        "default": 0.15,
+        "min": 0.02,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "key": "size",
+        "label": "Cell size",
+        "type": "number",
+        "default": 40,
+        "min": 8,
+        "max": 160,
+        "step": 2,
+        "unit": "px"
+      },
+      {
+        "key": "line",
+        "label": "Line width",
+        "type": "number",
+        "default": 1,
+        "min": 1,
+        "max": 4,
+        "step": 0.5,
+        "unit": "px"
+      },
+      {
+        "key": "noise",
+        "label": "Grain",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "fade",
+        "label": "Fade edges",
+        "type": "boolean",
+        "default": false
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "repo": "SDSHC-games-hub and SDSHC-check-in",
+      "file": "games-hub src/styles/advanced.css (.adv-gradient-grid); check-in src/ui/ui.css (.gb-grid, .gb-noise)"
     }
   },
   {
@@ -603,6 +804,16 @@
     "target": "element",
     "params": [
       {
+        "key": "trigger",
+        "label": "When",
+        "type": "select",
+        "default": "loop",
+        "options": [
+          "loop",
+          "hover"
+        ]
+      },
+      {
         "key": "color",
         "label": "Color",
         "type": "color",
@@ -735,17 +946,60 @@
       {
         "key": "palette",
         "label": "Colors",
+        "type": "palette",
+        "default": "flower"
+      },
+      {
+        "key": "spread",
+        "label": "Spread",
+        "type": "number",
+        "default": 0.6,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "key": "speed",
+        "label": "Speed",
+        "type": "number",
+        "default": 1,
+        "min": 0.25,
+        "max": 3,
+        "step": 0.05,
+        "unit": "×"
+      },
+      {
+        "key": "density",
+        "label": "Stars",
+        "type": "number",
+        "default": 30,
+        "min": 8,
+        "max": 160,
+        "step": 2
+      },
+      {
+        "key": "size",
+        "label": "Star size",
+        "type": "number",
+        "default": 5,
+        "min": 2,
+        "max": 14,
+        "step": 1,
+        "unit": "px"
+      },
+      {
+        "key": "origin",
+        "label": "Burst from",
         "type": "select",
-        "default": "flower",
+        "default": "center",
         "options": [
-          "flower",
-          "fairy",
-          "gold"
+          "center",
+          "scattered"
         ]
       },
       {
         "key": "bleed",
-        "label": "Spread",
+        "label": "Overflow",
         "type": "number",
         "default": 32,
         "min": 0,

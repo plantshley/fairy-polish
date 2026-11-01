@@ -108,15 +108,27 @@ function safeQuery(doc, sel) {
   }
 }
 
-// The CSS selector a preview rule uses for a change, by scope.
-export function previewSelector(target) {
+// The CSS selector for the element(s) a change is about, by scope.
+export function baseSelector(target) {
   if (target.scope === 'component' && target.source) return `[data-fp-src=${cssString(target.source)}]`
   if (target.scope === 'selector' && target.classSelector) return target.classSelector
   return `[data-fp-id=${cssString(target.fpId)}]`
 }
 
+// The selector a preview rule uses: the base, then the hover state, the text
+// wrapper (part: text), and a pseudo-element.
+export function previewSelector(target) {
+  return baseSelector(target)
+    .split(/,(?![^(]*\))/)
+    .map((s) => s.trim() + (target.state === 'hover' ? ':hover' : '') + (target.part === 'text' ? ' > [data-fp-text]' : '') + (target.pseudo || ''))
+    .join(', ')
+}
+
 export function describe(target) {
   const name = target.name ? `“${target.name}” ` : ''
   const cls = target.classes?.length ? '.' + target.classes.slice(0, 2).join('.') : ''
-  return `${name}${target.component ? target.component + ' ' : ''}<${target.tag}${cls}>`
+  if (target.classSelector === ':root') return 'site theme (:root)'
+  if (target.kind === 'site') return 'whole site'
+  const extra = (target.state === 'hover' ? ':hover' : '') + (target.pseudo || '') + (target.part === 'text' ? ' (text)' : '')
+  return `${name}${target.component ? target.component + ' ' : ''}<${target.tag}${cls}>${extra}`
 }

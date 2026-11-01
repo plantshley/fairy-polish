@@ -57,24 +57,60 @@ export function bandLabel({ lo, hi }) {
   return `${lo}–${hi}px`
 }
 
-// applyTo: 'all' | 'only' | 'down' | 'up'
-export function mediaFor({ applyTo, w, h, bps, label, orientationOnly }) {
-  const band = bandFor(w, bps)
-  let minWidth = null
-  let maxWidth = null
-  if (applyTo === 'only') ({ lo: minWidth, hi: maxWidth } = band)
-  if (applyTo === 'down') maxWidth = band.hi
-  if (applyTo === 'up') minWidth = band.lo
-  const orientation = orientationOnly ? (w > h ? 'landscape' : 'portrait') : null
+// The site's size ranges, from its breakpoints: n breakpoints make n + 1
+// bands. Each gets a device name by where it sits and keeps its pixel range.
+export function bands(bps) {
+  const list = []
+  let lo = null
+  for (const b of bps) {
+    list.push({ lo, hi: b - 1 })
+    lo = b
+  }
+  list.push({ lo, hi: null })
+  const seen = {}
+  for (const [i, b] of list.entries()) {
+    const ref = b.hi == null ? b.lo : b.lo == null ? b.hi : (b.lo + b.hi) / 2
+    let name = i === 0 ? 'mobile' : i === list.length - 1 ? 'desktop' : ref < 1024 ? 'tablet' : 'laptop'
+    seen[name] = (seen[name] || 0) + 1
+    b.name = name
+  }
+  // Repeated names (sites with many breakpoints) get numbered.
+  const count = {}
+  for (const b of list) {
+    if (seen[b.name] < 2) continue
+    count[b.name] = (count[b.name] || 0) + 1
+    b.name = `${b.name} ${count[b.name]}`
+  }
+  return list
+}
+
+// A size to preview a band at: the preset when it falls inside the band,
+// else a width inside it.
+export function previewSizeFor(band, orient) {
+  const base = /mobile/.test(band.name) ? PRESETS.mobile : /tablet/.test(band.name) ? PRESETS.tablet : null
+  let w = base?.w
+  let h = base?.h
+  const inside = (x) => (band.lo == null || x >= band.lo) && (band.hi == null || x <= band.hi)
+  if (!w || !inside(w)) {
+    w = band.hi == null ? Math.max(band.lo ?? 1280, 1280) : band.lo == null ? Math.min(390, band.hi) : Math.round((band.lo + band.hi) / 2)
+    h = w < 700 ? 844 : w < 1100 ? 1180 : 900
+  }
+  if (orient && (orient === 'landscape') !== w > h) [w, h] = [h, w]
+  return { w, h }
+}
+
+export function mediaFor({ band, orient, w, h }) {
+  const minWidth = band?.lo ?? null
+  const maxWidth = band?.hi ?? null
   const parts = []
   if (minWidth != null) parts.push(`(min-width: ${minWidth}px)`)
   if (maxWidth != null) parts.push(`(max-width: ${maxWidth}px)`)
-  if (orientation) parts.push(`(orientation: ${orientation})`)
+  if (orient) parts.push(`(orientation: ${orient})`)
   return {
-    label: parts.length ? label : 'all',
+    label: band ? band.name + (orient ? ' ' + orient : '') : orient || 'all',
     minWidth,
     maxWidth,
-    orientation,
+    orientation: orient || null,
     query: parts.join(' and ') || null,
     capturedAt: { w, h },
   }

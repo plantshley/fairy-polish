@@ -10,7 +10,7 @@ function run(el, params) {
   const id = 'shooting-stars'
   if (reduced(el)) return tag(el, id)
   const unpos = positioned(el)
-  const l = layer(el, id, { z: 0 })
+  const l = layer(el, id, { behind: true })
   for (const [top, left, frac] of SPOTS) {
     const s = el.ownerDocument.createElement('i')
     s.setAttribute('data-fp-shooting-star', '')

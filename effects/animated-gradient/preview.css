@@ -1,3 +1,3 @@
-[data-fp-fx~="animated-gradient"] { background: linear-gradient(var(--fp-animated-gradient-angle), var(--fp-animated-gradient-a), var(--fp-animated-gradient-b), var(--fp-animated-gradient-c), var(--fp-animated-gradient-a)) !important; background-size: 400% 400% !important; animation: fp-animated-gradient var(--fp-animated-gradient-duration) ease-in-out infinite; }
+[data-fp-fx~="animated-gradient"] { background: var(--fp-animated-gradient-image) !important; background-size: 400% 400% !important; animation: fp-animated-gradient var(--fp-animated-gradient-duration) ease-in-out infinite; }
 @keyframes fp-animated-gradient { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
 @media (prefers-reduced-motion: reduce) { [data-fp-fx~="animated-gradient"] { animation: none !important; transition: none !important; } }

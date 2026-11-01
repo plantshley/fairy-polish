@@ -15,8 +15,11 @@ Needs `-webkit-background-clip: text` and `-webkit-text-fill-color: transparent`
 
 ## Params
 
-- `palette` (Palette): select, default `cyan-purple`
-- `duration` (Duration): number, default `8000` ms
+- `palette` (Colors): a palette name from `effects/_lib/palettes.js` (default `cyan-purple`), or an array of colors when the user picked custom. Resolve names with that file.
+- `angle` (Angle): gradient angle in deg, default `90`
+- `duration` (Duration): default `8000` ms
+
+Build the gradient as `linear-gradient(<angle>deg, c1, c2, ..., c1)` (first color repeated last so the loop is seamless), `background-size: 200% 200%` (300% for more than three colors), and animate `background-position` from `0% 0%` to `100% 100%` and back.
 
 The change file gives the values the user chose. Map colors to the project's existing tokens when one matches.
 

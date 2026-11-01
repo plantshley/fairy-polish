@@ -9,6 +9,7 @@ function run(el, params) {
   if (reduced(el)) return tag(el, id)
   const unpos = positioned(el)
   const l = layer(el, id)
+  if (params.trigger === 'hover') l.setAttribute('data-fp-shimmer-hover', '')
   const unvars = vars(el, id, { duration: params.duration, tint: rgba(params.color, params.strength) }, { duration: 'ms' })
   return all(tag(el, id), unvars, () => l.remove(), unpos)
 }

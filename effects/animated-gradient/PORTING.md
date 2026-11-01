@@ -21,11 +21,11 @@ Repeating the first color at the end makes the loop seamless. In fairy-shop the 
 
 ## Params
 
-- `a` (Color 1): color, default `#ffd6e8`
-- `b` (Color 2): color, default `#d6e4ff`
-- `c` (Color 3): color, default `#e8d6ff`
-- `angle` (Angle): number, default `135` deg
-- `duration` (Duration): number, default `15000` ms
+- `palette` (Colors): a palette name from `effects/_lib/palettes.js` (default `pastel`), or an array of colors when the user picked custom. Older files carry `a`, `b`, `c` instead.
+- `angle` (Angle): default `135` deg
+- `duration` (Duration): default `15000` ms
+
+Gradient: `linear-gradient(<angle>deg, c1, ..., cN, c1)`, `background-size: 400% 400%`.
 
 The change file gives the values the user chose. Map colors to the project's existing tokens when one matches.
 

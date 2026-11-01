@@ -9,7 +9,8 @@
 // and replayed in order only when the structural part of the set changes.
 
 import { getChanges, patchSilent } from './store.js'
-import { resolve, previewSelector } from './locate.js'
+import { resolve, previewSelector, baseSelector } from './locate.js'
+import { normalizeColor } from './tokens.js'
 import { themeWrap, currentTheme } from './theme.js'
 import { mediaMatches } from './media.js'
 import { state } from './state.js'
@@ -56,8 +57,8 @@ function decls(c) {
   return []
 }
 
-export function buildCss() {
-  const out = []
+export function buildCss(doc) {
+  const out = [replaceCss(doc), '[data-fp-text][data-fp-fx] { display: inline-block; }']
   for (const c of getChanges()) {
     const d = decls(c)
     if (!d.length) continue
@@ -141,6 +142,8 @@ function renderStructural(doc) {
 }
 
 export function singleTextNode(el) {
+  const only = el.children.length === 1 && el.firstElementChild.hasAttribute('data-fp-text') ? el.firstElementChild : null
+  if (only && ![...el.childNodes].some((n) => n.nodeType === 3 && n.nodeValue.trim())) el = only
   const texts = [...el.childNodes].filter((n) => n.nodeType === 3 && n.nodeValue.trim())
   const elems = [...el.childNodes].filter((n) => n.nodeType === 1)
   return texts.length === 1 && !elems.length ? texts[0] : null
@@ -161,7 +164,7 @@ async function renderEffects(doc) {
   for (const [id, r] of map) {
     const c = wanted.get(id)
     const el = c && byId(doc, c.target.fpId)
-    if (!c || JSON.stringify(c.params) !== r.sig || el !== r.el) {
+    if (!c || sigOf(c) !== r.sig || el !== r.el) {
       safe(r.cleanup)
       map.delete(id)
     }
@@ -170,15 +173,23 @@ async function renderEffects(doc) {
     if (map.has(id)) continue
     const el = byId(doc, c.target.fpId)
     if (!el) continue
-    map.set(id, { sig: JSON.stringify(c.params), el, cleanup: null })
+    map.set(id, { sig: sigOf(c), el, cleanup: null })
     try {
       const apply = await loadEffect(c.effect, [doc])
       const entry = map.get(id)
-      if (entry && entry.el === el) entry.cleanup = apply(el, c.params || {})
+      if (!entry || entry.el !== el) continue
+      // part: text runs the effect on the text wrapper(s) instead of the box.
+      const hosts = c.target.part === 'text' ? [...el.querySelectorAll(':scope > [data-fp-text]')] : [el]
+      const cleanups = hosts.map((n) => apply(n, c.params || {}))
+      entry.cleanup = () => cleanups.forEach(safe)
     } catch (err) {
       console.warn('[fairy-polish] effect failed', c.effect, err)
     }
   }
+}
+
+function sigOf(c) {
+  return JSON.stringify([c.params, c.target.part || null])
 }
 
 function safe(fn) {
@@ -211,12 +222,15 @@ export function render(doc) {
   resolveAll(doc)
   renderStructural(doc)
   resolveAll(doc)
-  writeStyle(doc, buildCss())
+  renderWrappers(doc)
+  loadFonts(doc)
+  writeStyle(doc, buildCss(doc))
   recordComputed(doc)
   renderEffects(doc)
 }
 
 export function teardown(doc) {
+  unwrapText(doc)
   const s = structural.get(doc)
   if (s) for (const fn of s.undo.reverse()) fn()
   structural.delete(doc)
@@ -224,4 +238,169 @@ export function teardown(doc) {
   if (m) for (const r of m.values()) safe(r.cleanup)
   running.delete(doc)
   doc.getElementById(STYLE_ID)?.remove()
+}
+
+/* ── text wrappers (part: text) ─────────────────────────────────────────── */
+
+// Edits with part: text style only the element's own text, so each of its
+// direct text nodes is wrapped in <span data-fp-text> for the preview. The
+// agent writes a real span (or uses an existing inline child).
+
+const wrapped = new WeakMap() // doc → { sig, undo: [fn] }
+
+export function hasOwnText(el) {
+  return [...el.childNodes].some((n) => n.nodeType === 3 && n.nodeValue.trim()) || !!textWrapper(el)
+}
+
+export function textWrapper(el) {
+  return el.querySelector(':scope > [data-fp-text]')
+}
+
+// Wraps el's direct text nodes; returns an undo.
+export function wrapText(el) {
+  if (textWrapper(el)) return () => {}
+  const doc = el.ownerDocument
+  const spans = []
+  for (const n of [...el.childNodes]) {
+    if (n.nodeType !== 3 || !n.nodeValue.trim()) continue
+    const s = doc.createElement('span')
+    s.setAttribute('data-fp-text', '')
+    n.replaceWith(s)
+    s.append(n)
+    spans.push(s)
+  }
+  return () => {
+    for (const s of spans) if (s.isConnected) s.replaceWith(...s.childNodes)
+  }
+}
+
+function wrapperSels() {
+  return [...new Set(getChanges().filter((c) => c.target?.part === 'text').map((c) => baseSelector(c.target)))]
+}
+
+function renderWrappers(doc) {
+  const sels = wrapperSels()
+  const sig = JSON.stringify(sels)
+  const prev = wrapped.get(doc)
+  // Re-wrap when the set changes, or when a framework re-render dropped them.
+  if (prev && prev.sig === sig && prev.spans.every((s) => s.isConnected)) return
+  unwrapText(doc)
+  const undo = []
+  for (const sel of sels) {
+    let els = []
+    try {
+      els = doc.querySelectorAll(sel)
+    } catch {}
+    for (const el of els) undo.push(wrapText(el))
+  }
+  wrapped.set(doc, { sig, undo, spans: [...doc.querySelectorAll('[data-fp-text]')] })
+}
+
+// Removes the wrappers (in-place text editing needs the plain nodes); the
+// next render puts them back.
+export function unwrapText(doc) {
+  const prev = wrapped.get(doc)
+  if (prev) for (const fn of prev.undo.reverse()) fn()
+  wrapped.delete(doc)
+}
+
+/* ── site-wide replacements (Theme tab) ─────────────────────────────────── */
+
+// A replace change rewrites every declaration in the site's own CSS that uses
+// one color (or font). The preview emits the same selectors with the new
+// value, after the originals, so specificity and order decide exactly as they
+// do in the site's code.
+
+const COLOR_RE = /#[0-9a-f]{3,8}\b|(?:rgba?|hsla?)\([^)]*\)|\b[a-z]+\b/gi
+const KEYWORDS = /^(inherit|initial|unset|revert|none|auto|solid|dashed|dotted|double|transparent|currentcolor|important|inset|ease|linear|infinite|normal|bold|italic)$/i
+const replaceCache = new WeakMap()
+
+function ownSheet(sheet) {
+  const n = sheet.ownerNode
+  return !!n && (n.id === 'fp-preview' || !!n.dataset?.key?.startsWith('fp-fx-css-') || n.dataset?.fpGfont != null)
+}
+
+export function firstFamily(v) {
+  return (String(v).split(',')[0] || '').replace(/["']/g, '').trim().toLowerCase()
+}
+
+function replaceCss(doc) {
+  const reps = getChanges().filter((c) => c.type === 'replace')
+  if (!reps.length) return ''
+  const sig = JSON.stringify(reps.map((r) => [r.kind, r.from, r.to])) + doc.styleSheets.length
+  const cached = replaceCache.get(doc)
+  if (cached?.sig === sig) return cached.css
+  const colors = reps.filter((r) => r.kind === 'color').map((r) => ({ from: normalizeColor(doc, r.from), to: r.to })).filter((r) => r.from)
+  const fonts = reps.filter((r) => r.kind === 'font').map((r) => ({ from: firstFamily(r.from), to: r.to }))
+  const memo = new Map()
+  const norm = (tok) => {
+    if (!memo.has(tok)) memo.set(tok, KEYWORDS.test(tok) ? null : normalizeColor(doc, tok))
+    return memo.get(tok)
+  }
+  const out = []
+  const visit = (rules, wrap) => {
+    for (const r of rules) {
+      if (r.type === CSSRule.MEDIA_RULE) {
+        visit(r.cssRules, (x) => wrap(`@media ${r.conditionText || r.media.mediaText} { ${x} }`))
+        continue
+      }
+      if (r.type === CSSRule.SUPPORTS_RULE) {
+        visit(r.cssRules, (x) => wrap(`@supports ${r.conditionText} { ${x} }`))
+        continue
+      }
+      if (!r.style || !r.selectorText) {
+        if (r.cssRules) visit(r.cssRules, wrap)
+        continue
+      }
+      const decls = []
+      for (let i = 0; i < r.style.length; i++) {
+        const prop = r.style[i]
+        const val = r.style.getPropertyValue(prop)
+        if (!val || val.includes('var(')) continue
+        let next = val
+        if (colors.length) {
+          next = next.replace(COLOR_RE, (tok) => {
+            const n = norm(tok)
+            const hit = n && colors.find((c) => c.from === n)
+            return hit ? hit.to : tok
+          })
+        }
+        if (fonts.length && prop === 'font-family') {
+          const hit = fonts.find((f) => f.from === firstFamily(val))
+          if (hit) next = hit.to
+        }
+        if (next !== val) decls.push(`${prop}: ${next}${r.style.getPropertyPriority(prop) ? ' !important' : ''};`)
+      }
+      if (decls.length) out.push(wrap(`${r.selectorText} { ${decls.join(' ')} }`))
+    }
+  }
+  for (const sheet of doc.styleSheets) {
+    if (ownSheet(sheet)) continue
+    try {
+      visit(sheet.cssRules, (x) => x)
+    } catch {}
+  }
+  // A font the page only gets from the browser default has no declaration.
+  const bodyFam = doc.body ? firstFamily(doc.defaultView.getComputedStyle(doc.body).fontFamily) : ''
+  for (const f of fonts) if (bodyFam === f.from && !out.some((x) => x.includes('font-family'))) out.push(`body { font-family: ${f.to}; }`)
+  const css = out.join('\n')
+  replaceCache.set(doc, { sig, css })
+  return css
+}
+
+// Google Fonts picked in the panel load into the previewed page.
+function loadFonts(doc) {
+  const urls = new Set()
+  for (const c of getChanges()) {
+    if (c.fontUrl) urls.add(c.fontUrl)
+    for (const v of Object.values(c.props || {})) if (v.fontUrl) urls.add(v.fontUrl)
+  }
+  for (const href of urls) {
+    if ([...doc.querySelectorAll('link[data-fp-gfont]')].some((l) => l.href === href)) continue
+    const link = doc.createElement('link')
+    link.rel = 'stylesheet'
+    link.href = href
+    link.dataset.fpGfont = ''
+    doc.head.append(link)
+  }
 }

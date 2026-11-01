@@ -8,7 +8,7 @@ import { describe } from './locate.js'
 import { state } from './state.js'
 import { toast } from './toast.js'
 
-const SCOPE_TEXT = { instance: 'this element only', component: 'every instance of the component', selector: 'every element matching the class selector' }
+const SCOPE_TEXT = { instance: 'this element only', component: 'every copy of this element (everything rendered by the same source line)', selector: 'every element matching the class selector' }
 
 function clean(target) {
   if (!target) return target
@@ -47,12 +47,17 @@ export function toMarkdown(file) {
     const t = c.target
     lines.push(`## ${c.id} · ${c.type} · ${describe(t)}`)
     if (t.source) lines.push(`- Source: \`${t.source}\``)
-    lines.push(`- Selector: \`${t.selector}\``)
+    if (t.selector && t.kind !== 'site') lines.push(`- Selector: \`${t.selector}\``)
+    if (t.part === 'text') lines.push('- Part: the element’s own text only (wrap it in a span, or use an existing inline child)')
+    if (t.state === 'hover') lines.push('- State: :hover')
+    if (t.pseudo) lines.push(`- Pseudo-element: \`${t.pseudo}\``)
     if (t.text) lines.push(`- Text: “${t.text}”`)
-    lines.push(`- Applies to: ${SCOPE_TEXT[t.scope] || t.scope}${t.classSelector && t.scope === 'selector' ? ` (\`${t.classSelector}\`)` : ''}`)
+    if (t.kind !== 'site' && t.kind !== 'root') lines.push(`- Applies to: ${SCOPE_TEXT[t.scope] || t.scope}${t.classSelector && t.scope === 'selector' ? ` (\`${t.classSelector}\`)` : ''}`)
     lines.push(`- Screen: ${sizeText(t.media)}`)
     if (t.theme && t.theme !== 'both') lines.push(`- Theme: ${t.theme}`)
-    if (c.type === 'style') for (const [p, v] of Object.entries(c.props)) lines.push(`- \`${p}\`: \`${v.from}\` → \`${v.to}\`${v.toToken ? ` (token \`${v.toToken}\`)` : ''}${v.mirrored ? ' (mirrored from the other theme)' : ''}`)
+    if (c.type === 'style') for (const [p, v] of Object.entries(c.props)) lines.push(`- \`${p}\`: \`${v.from}\` → \`${v.to}\`${v.toToken ? ` (token \`${v.toToken}\`)` : ''}${v.mirrored ? ' (mirrored from the other theme)' : ''}${v.fontUrl ? ` (load ${v.fontUrl})` : ''}`)
+    if (c.type === 'replace') lines.push(`- Replace every ${c.kind} \`${c.from}\` with \`${c.to}\` in the site’s CSS${c.fontUrl ? ` (load ${c.fontUrl})` : ''}`)
+    if (c.type === 'galleryAdd') lines.push(`- Add to the fairy polish gallery as “${c.name}”: ${c.found.kind}${c.found.name ? ` \`${c.found.name}\`` : ''}${c.found.pseudo ? ` on \`${c.found.pseudo}\`` : ''}`)
     if (c.type === 'reorder') lines.push(`- Move into ${describe(c.to.parent)}${c.to.before ? `, before ${describe(c.to.before)}` : ', at the end'}`)
     if (c.type === 'freeMove') lines.push(`- Offset ${c.dx}px, ${c.dy}px at ${c.viewport.w}×${c.viewport.h}. Approximate: pick a responsive equivalent.`)
     if (c.type === 'text') lines.push(`- “${c.from}” → “${c.to}”`)

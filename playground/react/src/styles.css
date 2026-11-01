@@ -32,3 +32,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 syst
 .list { margin-top: 32px; }
 @media (max-width: 1023px) { .grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 639px) { .grid { grid-template-columns: 1fr; } .hero h1 { font-size: 30px; } }
+.btn { transition: transform .2s ease, box-shadow .2s ease; }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.12); }
+.btn.primary { animation: pulse-ring 2.4s ease-in-out infinite; }
+@keyframes pulse-ring { 0%, 100% { box-shadow: 0 0 0 0 rgba(47,125,79,.35); } 50% { box-shadow: 0 0 0 8px rgba(47,125,79,0); } }

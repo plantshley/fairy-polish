@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 
 const dir = path.dirname(fileURLToPath(import.meta.url))
 const CATEGORIES = ['hover', 'click', 'entrance', 'loop', 'background', 'cursor']
-const TYPES = ['color', 'number', 'select', 'boolean', 'text']
+const TYPES = ['color', 'number', 'select', 'boolean', 'text', 'palette']
 const errors = []
 const list = []
 

@@ -3,8 +3,14 @@
 // from the center by an emitter (8 every 0.4s, 30 max) and pulled back by an
 // absorber sitting on it, rotating as they go. Close to the original, not
 // frame-identical; PORTING.md for each effect gives the exact options.
+//
+// Without `spread` the motion is the original's: fixed launch speeds, so
+// stars stay within ~90px of the emitter whatever the canvas size. With
+// `spread` (0-1) they reach that fraction of the canvas's half-size, so the
+// field fills big containers. `speed` scales time, and `scatter` gives each
+// burst its own emitter point instead of the center.
 
-export function starField(canvas, { colors, max = 30, rate = 8, every = 400, sizeMin = 2, sizeMax = 5, pull = 0.035 }) {
+export function starField(canvas, { colors, max = 30, rate = 8, every = 400, sizeMin = 2, sizeMax = 5, pull = 0.035, spread = null, speed = 1, scatter = false }) {
   const ctx = canvas.getContext('2d')
   const win = canvas.ownerDocument.defaultView
   const stars = []
@@ -24,18 +30,26 @@ export function starField(canvas, { colors, max = 30, rate = 8, every = 400, siz
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   }
 
+  const k = pull * 0.02 * speed * speed
+
   function emit() {
+    const ox = scatter ? w * (0.1 + Math.random() * 0.8) : w / 2
+    const oy = scatter ? h * (0.1 + Math.random() * 0.8) : h / 2
     for (let i = 0; i < rate && stars.length < max; i++) {
       const a = Math.random() * Math.PI * 2
-      const v = 1.2 + Math.random() * 2.2
+      // Harmonic pull back to the origin: amplitude = v / sqrt(k).
+      const reach = spread == null ? null : spread * (scatter ? Math.min(w, h) / 3 : Math.min(w, h) / 2) * (0.5 + Math.random() * 0.5)
+      const v = reach == null ? (1.2 + Math.random() * 2.2) * speed : reach * Math.sqrt(k)
       stars.push({
-        x: w / 2,
-        y: h / 2,
+        ox,
+        oy,
+        x: ox,
+        y: oy,
         vx: Math.cos(a) * v,
         vy: Math.sin(a) * v,
         r: sizeMin + Math.random() * (sizeMax - sizeMin),
         rot: Math.random() * Math.PI * 2,
-        spin: (0.05 + Math.random() * 0.12) * (Math.random() < 0.5 ? 1 : 1),
+        spin: (0.05 + Math.random() * 0.12) * speed,
         color: colors[Math.floor(Math.random() * colors.length)],
         age: 0,
       })
@@ -66,19 +80,18 @@ export function starField(canvas, { colors, max = 30, rate = 8, every = 400, siz
       emit()
     }
     ctx.clearRect(0, 0, w, h)
-    const cx = w / 2
-    const cy = h / 2
+    const settle = 30 / speed
     for (let i = stars.length - 1; i >= 0; i--) {
       const s = stars[i]
       s.age++
-      s.vx += (cx - s.x) * pull * 0.02
-      s.vy += (cy - s.y) * pull * 0.02
+      s.vx += (s.ox - s.x) * k
+      s.vy += (s.oy - s.y) * k
       s.x += s.vx
       s.y += s.vy
       s.rot += s.spin
-      // Absorbed once it falls back onto the center after travelling out.
-      if (s.age > 30 && Math.hypot(s.x - cx, s.y - cy) < 6) stars.splice(i, 1)
-      else if (s.age > 600) stars.splice(i, 1)
+      // Absorbed once it falls back onto its origin after travelling out.
+      if (s.age > settle && Math.hypot(s.x - s.ox, s.y - s.oy) < 6) stars.splice(i, 1)
+      else if (s.age > 600 / speed) stars.splice(i, 1)
       else drawStar(s)
     }
     if (!emitting && !stars.length) {

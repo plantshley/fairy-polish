@@ -1,0 +1,4 @@
+[data-fp-layer="gradient-glow"] { background: var(--fp-gradient-glow-image); background-size: 400%; filter: blur(var(--fp-gradient-glow-blur)); border-radius: var(--fp-gradient-glow-radius) !important; opacity: 0; transition: opacity .3s ease-in-out; animation: fp-gradient-glow var(--fp-gradient-glow-duration) linear infinite; }
+[data-fp-layer="gradient-glow"][data-fp-always], :is(:hover, [data-fp-demo]) > [data-fp-layer="gradient-glow"] { opacity: var(--fp-gradient-glow-opacity); }
+@keyframes fp-gradient-glow { 0% { background-position: 0 0; } 50% { background-position: 400% 0; } 100% { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { [data-fp-layer="gradient-glow"] { animation: none !important; } }

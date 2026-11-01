@@ -3,13 +3,13 @@
 // keeps looking the way you left it across reloads.
 
 import { h } from './dom.js'
-import { CSS, PANEL_W } from './styles.js'
+import { CSS } from './styles.js'
 import { state, onUi, uiChanged } from './state.js'
 import { view, setFrame, layoutFrame, onDocChange, docs, FRAME_NAME } from './view.js'
 import { subscribe, undo, redo, clearAll, savedInfo, dropApplied, getChanges } from './store.js'
 import { render } from './preview.js'
 import { initSelect, attach } from './select.js'
-import { initPanel } from './panel.js'
+import { initPanel, focusSection } from './panel.js'
 import { initToast, toast } from './toast.js'
 import { detectBreakpoints } from './media.js'
 import { detectTheme, currentTheme, setTheme, releaseTheme } from './theme.js'
@@ -52,6 +52,7 @@ function boot() {
     initPanel(root, shadow)
     attach(document)
     root.addEventListener('fp-tab', () => uiChanged('tab'))
+    root.addEventListener('fp-focus', (e) => focusSection(e.detail))
   }
 
   function applyEditorTheme() {
@@ -74,12 +75,17 @@ function boot() {
     applyEditorTheme()
   }
 
+  // The page area left of (or right of) the panel; a collapsed panel takes none.
+  const panelW = () => (state.collapsed ? 0 : state.panelW)
+
   onUi((what) => {
     if (what === 'toggle') toggle()
+    if (what === 'layout') layoutFrame(state.frameSize, panelW(), state.dock)
+    if (what === 'rerender') renderAll()
     if (what === 'editorTheme') applyEditorTheme()
     if (what === 'size') {
-      setFrame(root, state.frameSize, PANEL_W, state.dock)
-      layoutFrame(state.frameSize, PANEL_W, state.dock)
+      setFrame(root, state.frameSize, panelW(), state.dock)
+      layoutFrame(state.frameSize, panelW(), state.dock)
       state.selected = null
       uiChanged('selection')
     }
@@ -109,7 +115,7 @@ function boot() {
   subscribe(() => renderAll())
   window.addEventListener('keydown', onKey, true)
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyEditorTheme)
-  window.addEventListener('resize', () => layoutFrame(state.frameSize, PANEL_W, state.dock))
+  window.addEventListener('resize', () => layoutFrame(state.frameSize, panelW(), state.dock))
 
   function onKey(e) {
     if (matchesHotkey(e)) {

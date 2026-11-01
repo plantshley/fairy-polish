@@ -3,10 +3,12 @@
 // entry records a free-text tag for anything the gallery lacks.
 
 import { h, clear } from './dom.js'
-import { loadCatalog, loadEffect, defaultsFor, effectMeta } from './effects.js'
+import { loadCatalog, loadEffect, defaultsFor, effectMeta, loadPalettes } from './effects.js'
 import { addEffect, updateEffect } from './edit.js'
 import { getChanges, removeChange } from './store.js'
 import { state } from './state.js'
+import { dropdown, segmented, colorList, swatch } from './controls.js'
+import { hasOwnText, wrapText } from './preview.js'
 
 const CATS = ['all', 'hover', 'click', 'entrance', 'loop', 'background', 'cursor']
 let cat = 'all'
@@ -32,10 +34,17 @@ export function renderGallery(body, el) {
   const head = h('div', { class: 'fp-row', style: { paddingTop: '6px' } },
     h('div', { class: 'fp-note', style: { flex: '1' } }, el ? 'Hover to preview on the selection. Click to attach.' : 'Select an element first to preview and attach.'),
     h('button', { class: 'fp-icon', title: 'About the gallery', onClick: (e) => info(e.currentTarget) }, 'ⓘ'))
+  const ownText = el && hasOwnText(el)
+  const part = h('div', { class: 'fp-part' },
+    h('span', { class: 'fp-kbd' }, 'apply to the'),
+    segmented(ownText ? state.part : 'element', [
+      { value: 'element', label: 'element', title: 'The effect covers the whole box' },
+      { value: 'text', label: 'text only', disabled: !ownText, title: ownText ? 'The effect covers only where the text is' : 'Select an element with text of its own' },
+    ], (v) => { state.part = v; renderGallery(clear(body), el) }))
   const cats = h('div', { class: 'fp-cats' }, CATS.map((c) =>
     h('button', { class: 'fp-btn' + (c === cat ? ' on' : ''), onClick: () => { cat = c; renderGallery(clear(body), el) } }, c)))
   const grid = h('div', { class: 'fp-grid' })
-  body.append(head, cats, grid)
+  body.append(head, part, cats, grid)
   loadCatalog().then((list) => {
     const shown = list.filter((e) => cat === 'all' || e.category === cat)
     if (!list.length) grid.append(h('div', { class: 'fp-empty', style: { gridColumn: '1 / -1' } }, 'No effects found. The gallery lives in the fairy-polish repo under effects/.'))
@@ -63,11 +72,14 @@ function card(meta, el, body) {
     const apply = await loadEffect(meta.id, [el.ownerDocument])
     if (!hovering) return
     try {
-      const undo = apply(el, defaultsFor(meta))
-      demo(el, true)
+      const unwrap = state.part === 'text' && hasOwnText(el) ? wrapText(el) : null
+      const hosts = unwrap ? [...el.querySelectorAll(':scope > [data-fp-text]')] : [el]
+      const undos = hosts.map((n) => apply(n, defaultsFor(meta)))
+      hosts.forEach((n) => demo(n, true))
       previewCleanup = () => {
-        demo(el, false)
-        safe(undo)
+        hosts.forEach((n) => demo(n, false))
+        undos.forEach(safe)
+        safe(unwrap)
       }
     } catch {}
   })
@@ -82,8 +94,7 @@ function card(meta, el, body) {
     safe(previewCleanup)
     previewCleanup = null
     addEffect(el, meta.id, defaultsFor(meta))
-    state.tab = 'edit'
-    body.dispatchEvent(new CustomEvent('fp-tab', { bubbles: true, composed: true }))
+    focusEffects(body)
   })
   return c
 }
@@ -95,10 +106,14 @@ function customCard(el, body) {
     onClick: () => {
       if (!el) return
       addEffect(el, 'custom', {}, '')
-      state.tab = 'edit'
-      body.dispatchEvent(new CustomEvent('fp-tab', { bubbles: true, composed: true }))
+      focusEffects(body)
     },
   }, h('div', { class: 'fp-thumb' }, h('div', { class: 'fp-sample', style: { background: 'none', border: '1px dashed currentColor', color: 'inherit' } }, '+')), 'Custom tag')
+}
+
+// Opens the Edit tab with only its Effects section open.
+function focusEffects(node) {
+  node.dispatchEvent(new CustomEvent('fp-focus', { bubbles: true, composed: true, detail: 'Effects' }))
 }
 
 function info(anchor) {
@@ -123,12 +138,18 @@ function copy(text, btn) {
 export function renderAttached(el) {
   const mine = getChanges().filter((c) => c.type === 'effect' && c.target.fpId === el.dataset.fpId)
   const wrap = h('div', { style: { display: 'grid', gap: '6px' } })
+  const ownText = hasOwnText(el)
   for (const c of mine) {
     const meta = c.effect === 'custom' ? null : effectMeta(c.effect)
     const rows = [
       h('div', { class: 'fp-row' },
         h('b', { style: { flex: '1' } }, c.effect === 'custom' ? 'Custom tag' : meta?.name || c.effect),
         h('button', { class: 'fp-icon', title: 'Remove', onClick: () => removeChange(c.id) }, '✕')),
+      h('div', { class: 'fp-field' }, h('label', {}, 'apply to'),
+        segmented(c.target.part === 'text' ? 'text' : 'element', [
+          { value: 'element', label: 'element' },
+          { value: 'text', label: 'text only', disabled: !ownText && c.target.part !== 'text' },
+        ], (v) => updateEffect(c.id, { target: v === 'text' ? { part: 'text' } : {} }))),
     ]
     for (const p of meta?.params || []) rows.push(paramField(c, p))
     const note = h('textarea', { class: 'fp-in', placeholder: c.effect === 'custom' ? 'Describe the effect: what moves, when, how fast' : 'Optional note for the agent' })
@@ -150,23 +171,52 @@ function paramField(c, p) {
   const set = (val) => updateEffect(c.id, { params: { ...c.params, [p.key]: val } })
   let input
   if (p.type === 'color') {
-    input = h('input', { type: 'color', value: v })
-    input.addEventListener('input', () => set(input.value))
+    input = swatch(v, (val) => set(val))
   } else if (p.type === 'boolean') {
-    input = h('input', { type: 'checkbox', checked: !!v })
-    input.addEventListener('change', () => set(input.checked))
+    input = segmented(!!v, [{ value: false, label: 'off' }, { value: true, label: 'on' }], (val) => set(val))
   } else if (p.type === 'text') {
     input = h('input', { class: 'fp-in', value: v ?? '' })
     input.addEventListener('keydown', (e) => e.stopPropagation())
     input.addEventListener('change', () => set(input.value))
   } else if (p.type === 'select') {
-    input = h('select', { class: 'fp-in' }, (p.options || []).map((o) => h('option', { selected: o === v ? true : null }, o)))
-    input.addEventListener('change', () => set(input.value))
+    input = dropdown(v, p.options || [], (val) => set(val))
+  } else if (p.type === 'palette') {
+    return paletteField(p, v, set)
   } else {
-    input = h('input', { class: 'fp-in', type: 'range', min: p.min ?? 0, max: p.max ?? 100, step: p.step ?? 1, value: v })
-    input.addEventListener('input', () => set(parseFloat(input.value)))
+    const range = h('input', { class: 'fp-in', type: 'range', min: p.min ?? 0, max: p.max ?? 100, step: p.step ?? 1, value: v })
+    const out = h('span', { class: 'fp-kbd', style: { minWidth: '38px', textAlign: 'right' } }, fmt(v, p))
+    range.addEventListener('input', () => {
+      out.textContent = fmt(parseFloat(range.value), p)
+      set(parseFloat(range.value))
+    })
+    input = h('div', { class: 'fp-row', style: { flexWrap: 'nowrap' } }, range, out)
   }
-  return h('div', { class: 'fp-field' }, h('label', { title: p.label }, `${p.label}${p.unit ? ' (' + p.unit + ')' : ''}`), input)
+  return h('div', { class: 'fp-field' }, h('label', { title: p.label }, p.label), input)
+}
+
+function fmt(v, p) {
+  return `${+Number(v).toFixed(2)}${p.unit || ''}`
+}
+
+// A palette param: a named palette (shown as a strip) or "custom", which
+// stores the colors themselves and shows a list you can add to.
+function paletteField(p, v, set) {
+  const wrap = h('div', { style: { display: 'grid', gap: '4px' } })
+  loadPalettes().then((pals) => {
+    const strip = (colors) => `linear-gradient(90deg, ${colors.join(', ')})`
+    const custom = Array.isArray(v)
+    const items = [
+      ...Object.entries(pals).map(([name, colors]) => ({ value: name, label: name, swatch: strip(colors) })),
+      { value: '__custom', label: 'custom', swatch: custom ? strip(v) : 'repeating-linear-gradient(45deg, #ccc 0 3px, #fff 3px 6px)' },
+    ]
+    const dd = dropdown(custom ? '__custom' : v, items, (name) => {
+      if (name !== '__custom') return set(name)
+      if (!custom) set((pals[v] || Object.values(pals)[0]).slice(0, 2))
+    })
+    wrap.append(h('div', { class: 'fp-field' }, h('label', { title: p.label }, p.label), dd))
+    if (custom) wrap.append(h('div', { class: 'fp-field' }, h('label', {}, 'colors'), colorList(v, (list) => set(list))))
+  })
+  return wrap
 }
 
 // Lets hover and click effects show themselves while their card is hovered:
