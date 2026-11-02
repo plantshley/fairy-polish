@@ -8,11 +8,11 @@ import { state, savePrefs, uiChanged, onUi } from './state.js'
 import { getChanges, subscribe, undo, redo, canUndo, canRedo, clearAll, removeChanges } from './store.js'
 import {
   lengthField, selectField, textField, colorField, quadField, textInput, dropdown, segmented, combo, field,
-  gradientEditor, closeMenu,
+  gradientEditor, closeMenu, colorChips,
 } from './controls.js'
 import {
   setStyle, setStyles, valueFor, setName, setText, textChangeFor, currentSize, currentBand, pageTheme, shipped, addEffect,
-  addToGallery,
+  addToGallery, setKeyframes, keyframesValue,
 } from './edit.js'
 import { bands, previewSizeFor } from './media.js'
 import { describe } from './locate.js'
@@ -93,21 +93,21 @@ export function renderAll() {
 
 function renderHead() {
   clear(head)
+  const btn = ({ on, ...props }, label) => h('button', { ...props, class: 'fp-icon fp-hbtn' + (on ? ' on' : '') }, label)
   put(head,
     h('div', { class: 'fp-title', title: 'fairy polish' }, DISPLAY_NAME),
-    h('button', {
-      class: 'fp-icon' + (state.interact ? ' on' : ''),
-      title: state.interact ? 'Using the page: clicks go to the site. Click to select elements again.' : 'Use the page: let clicks reach links and buttons',
+    btn({
+      on: state.interact,
+      title: state.interact ? 'Using the site: clicks go to the page. Click to select elements again.' : 'Use the site: let clicks reach links and buttons',
       onClick: () => setMode({ interact: !state.interact }),
-    }, state.interact ? '☞ using page' : '☞'),
-    state.collapsed ? null : h('button', { class: 'fp-icon', title: 'Editor light/dark', onClick: toggleEditorTheme }, '◑'),
-    state.collapsed ? null : h('button', { class: 'fp-icon', title: 'Move panel to the other side', onClick: toggleDock }, '⇆'),
-    h('button', {
-      class: 'fp-icon',
+    }, state.interact ? '♥ using site' : '♡'),
+    state.collapsed ? null : btn({ title: 'Editor light/dark', onClick: toggleEditorTheme }, '◑'),
+    state.collapsed ? null : btn({ title: 'Move panel to the other side', onClick: toggleDock }, '⇆'),
+    btn({
       title: state.collapsed ? 'Expand the panel' : 'Collapse the panel (keeps your edits showing)',
       onClick: () => setMode({ collapsed: !state.collapsed }),
     }, state.collapsed ? '▴' : '▾'),
-    h('button', { class: 'fp-icon', title: 'Close (Alt+Shift+E)', onClick: () => uiChanged('toggle') }, '✕'),
+    btn({ title: 'Close (Alt+Shift+E)', onClick: () => uiChanged('toggle') }, '✕'),
   )
 }
 
@@ -319,7 +319,7 @@ function renderEdit() {
         'Alt+click selects its parent.', h('br'),
         'Double-click text to edit it.', h('br'),
         'Drag ⠿ to reorder. Shift+drag moves freely.', h('br'),
-        '☞ in the header lets clicks reach the page.', h('br'),
+        '♡ in the header lets clicks reach the site.', h('br'),
         'Esc deselects. Alt+Shift+E closes.'),
     )
     return
@@ -338,9 +338,13 @@ function renderEdit() {
     const v = valueFor(el, prop)
     return selectField(label, v.value, options, (val) => setStyle(el, prop, val), { overridden: v.overridden })
   }
-  const T = (label, prop, presets) => {
+  // chips: one swatch per color inside the value, for shadows and filters.
+  const T = (label, prop, presets, { chips } = {}) => {
     const v = valueFor(el, prop)
-    return textField(label, v.value, (val, o) => setStyle(el, prop, val, o), { key: prop, overridden: v.overridden, presets })
+    const set = (val, o) => setStyle(el, prop, val, o)
+    const tf = textField(label, v.value, set, { key: prop, overridden: v.overridden, presets })
+    const ch = chips ? colorChips(v.value, set, { key: prop }) : null
+    return ch ? [tf, field('colors', ch)] : tf
   }
   const C = (label, prop) => {
     const v = valueFor(el, prop)
@@ -421,12 +425,12 @@ function renderEdit() {
       L('radius', 'border-radius'),
     ),
     sec('Shadow & filter', false,
-      T('shadow', 'box-shadow', SHADOWS),
-      T('text shadow', 'text-shadow', TEXT_SHADOWS),
-      T('filter', 'filter', FILTERS),
+      T('shadow', 'box-shadow', SHADOWS, { chips: true }),
+      T('text shadow', 'text-shadow', TEXT_SHADOWS, { chips: true }),
+      T('filter', 'filter', FILTERS, { chips: true }),
       h('div', { class: 'fp-row' },
-        h('span', { class: 'fp-help grow' }, 'Shadows and filters take one color. For a gradient glow, attach the gradient glow effect.'),
-        h('button', { class: 'fp-btn', onClick: () => { addEffect(el, 'gradient-glow', { palette: 'rainbow', trigger: 'always', blur: 8, spread: 5, duration: 20000 }); focusSection('Effects') } }, '+ gradient glow')),
+        h('span', { class: 'fp-help grow' }, 'Each shadow color is solid. For a gradient glow, attach the gradient glow effect.'),
+        h('button', { class: 'fp-btn', onClick: () => { addEffect(el, 'gradient-glow', { palette: 'rainbow', trigger: 'loop', blur: 8, spread: 5, duration: 20000 }); focusSection('Effects') } }, '+ gradient glow')),
     ),
     sec('Effects', true, renderAttached(el, { onCustom: () => focusSection('Effects') })),
     sec('Text', false, textSection(el)),
@@ -616,7 +620,9 @@ function existingCard(el, fx) {
       h('div', { class: 'fp-row' },
         h('button', { class: 'fp-btn' + (paused ? ' on' : ''), onClick: () => listProp('animation-play-state', paused ? 'running' : 'paused') }, paused ? 'paused' : 'pause'),
         h('button', { class: 'fp-btn' + (removed ? ' on' : ''), onClick: () => listProp('animation-name', removed ? fx.name : 'none') }, removed ? 'removed: restore' : 'remove')),
-      fx.keyframes ? h('details', {}, h('summary', { class: 'fp-kbd' }, 'keyframes'), h('pre', { class: 'fp-kv' }, fx.keyframes)) : null,
+      fx.keyframes ? keyframeColors(el, fx) : null,
+      ...(fx.pseudo ? pseudoColors(el, o) : []),
+      fx.keyframes ? h('details', {}, h('summary', { class: 'fp-kbd' }, 'keyframes'), h('pre', { class: 'fp-kv' }, keyframesValue(fx.name) || fx.keyframes)) : null,
     )
   }
   if (fx.kind === 'transition') {
@@ -633,7 +639,11 @@ function existingCard(el, fx) {
     const ho = { ...o, state: 'hover' }
     for (const [prop, declared] of fx.decls) {
       const v = valueFor(el, prop, ho)
-      rows.push(textField(prop, v.overridden ? v.value : declared, (val, m) => setStyle(el, prop, val, { ...ho, from: declared, mergeKey: m?.mergeKey }), { key: 'hover:' + prop, overridden: v.overridden }))
+      const cur = v.overridden ? v.value : declared
+      const set = (val, m) => setStyle(el, prop, val, { ...ho, from: declared, mergeKey: m?.mergeKey })
+      rows.push(textField(prop, cur, set, { key: 'hover:' + prop, overridden: v.overridden }))
+      const ch = colorChips(cur, set, { key: 'hover:' + prop })
+      if (ch) rows.push(field('colors', ch))
     }
     rows.push(h('div', { class: 'fp-row' },
       h('span', { class: 'fp-help grow' }, fx.selectors.join(', ')),
@@ -649,12 +659,37 @@ function existingCard(el, fx) {
   return h('div', { class: 'fp-sub' }, rows)
 }
 
+// Colors inside the animation's @keyframes. Keyframes are shared, so this
+// recolors the animation everywhere the site uses it.
+function keyframeColors(el, fx) {
+  const cur = keyframesValue(fx.name) || fx.keyframes
+  const ch = colorChips(cur, (val, m) => setKeyframes(el, fx.name, fx.keyframes, val, m), { key: 'kf:' + fx.name })
+  if (!ch) return null
+  return h('div', {}, field('colors', ch), h('div', { class: 'fp-help' }, `Changes @keyframes ${fx.name}, so every element using it changes too.`))
+}
+
+// The ::before/::after an animation runs on usually carries the effect's
+// colors in its own background, shadow, or border.
+const PSEUDO_COLOR_PROPS = [['background', 'background-color'], ['gradient', 'background-image'], ['shadow', 'box-shadow'], ['border', 'border-top-color'], ['text', 'color']]
+
+function pseudoColors(el, o) {
+  const out = []
+  for (const [label, prop] of PSEUDO_COLOR_PROPS) {
+    const v = valueFor(el, prop, o)
+    if (/^rgba\(0, 0, 0, 0\)$|^none$/.test(v.value)) continue
+    const ch = colorChips(v.value, (val, m) => setStyle(el, prop, val, { ...o, mergeKey: m?.mergeKey }), { key: o.pseudo + prop })
+    if (ch) out.push(field(label, ch, { overridden: v.overridden }))
+  }
+  return out
+}
+
 /* ── changes tab ────────────────────────────────────────────────────────── */
 
 export function summarize(c) {
   const who = describe(c.target)
   const theme = c.target.theme && c.target.theme !== 'both' ? ` · ${c.target.theme}` : ''
-  const scope = c.target.scope === 'component' ? ' · every copy' : c.target.scope === 'selector' && c.target.classSelector && c.target.classSelector !== ':root' ? ` · all ${c.target.classSelector}` : ''
+  const page = c.target.route ? ` · ${c.target.route} only` : ''
+  const scope = page + (c.target.scope === 'component' ? ' · every copy' : c.target.scope === 'selector' && c.target.classSelector && c.target.classSelector !== ':root' ? ` · all ${c.target.classSelector}` : '')
   if (c.type === 'style')
     return {
       what: who + theme + scope,
@@ -665,7 +700,8 @@ export function summarize(c) {
   if (c.type === 'text') return { what: 'Text ' + who, det: `“${c.from}” → “${c.to}”` }
   if (c.type === 'effect') return { what: `${c.effect} on ${who}`, det: c.note || JSON.stringify(c.params || {}) }
   if (c.type === 'name') return { what: 'Name ' + who, det: c.name }
-  if (c.type === 'replace') return { what: `Every ${c.kind} ${c.from}`, det: `→ ${c.to}` }
+  if (c.type === 'replace') return { what: `Every ${c.kind} ${c.from}${c.target.route ? ` on ${c.target.route}` : ''}`, det: `→ ${c.to}` }
+  if (c.type === 'keyframes') return { what: `Colors of @keyframes ${c.name}`, det: `found on ${who}` }
   if (c.type === 'galleryAdd') return { what: `Add “${c.name}” to the gallery`, det: `from ${who}: ${c.found.kind}${c.found.name ? ' ' + c.found.name : ''}` }
   return { what: c.type, det: '' }
 }
@@ -673,7 +709,7 @@ export function summarize(c) {
 const TYPE_GROUPS = [
   ['Site theme', (c) => c.type === 'replace' || c.target?.classSelector === ':root'],
   ['Styles', (c) => c.type === 'style' && !c.target.state && !c.target.pseudo],
-  ['Existing effects', (c) => c.type === 'style'],
+  ['Existing effects', (c) => c.type === 'style' || c.type === 'keyframes'],
   ['Effects', (c) => c.type === 'effect'],
   ['Text', (c) => c.type === 'text'],
   ['Moves', (c) => c.type === 'reorder' || c.type === 'freeMove'],

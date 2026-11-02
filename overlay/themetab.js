@@ -3,9 +3,9 @@
 // replaced everywhere its CSS declares them. Per-element edits on the Edit
 // tab still win over these.
 
-import { h, put } from './dom.js'
+import { h, put, clear } from './dom.js'
 import { state, savePrefs } from './state.js'
-import { colorField, textField, field } from './controls.js'
+import { colorField, textField, field, segmented } from './controls.js'
 import { setToken, tokenValue, setReplace, replaceValue, isColorValue } from './edit.js'
 import { pageColors, normalizeColor } from './tokens.js'
 import { fontDropdown } from './fonts.js'
@@ -50,8 +50,19 @@ export function renderTheme(body) {
   const looseColors = colors.filter((c) => !tokenColors.has(normalizeColor(doc, c)))
   const otherTokens = Object.entries(tokens.light).filter(([name, v]) => !isColorValue(v) && !/^var\(/.test(v) && !colorTokens.some((t) => t.name === name))
 
+  const path = view.win.location.pathname
   put(body,
-    h('div', { class: 'fp-help', style: { paddingTop: '6px' } },
+    h('div', { class: 'fp-part', style: { paddingTop: '6px' } },
+      h('span', { class: 'fp-kbd' }, 'apply to'),
+      segmented(state.themeScope, [
+        { value: 'site', label: 'whole site', title: 'Every page' },
+        { value: 'page', label: 'this page', title: `Only ${path}` },
+      ], (v) => {
+        state.themeScope = v
+        renderTheme(clear(body))
+      })),
+    state.themeScope === 'page' ? h('div', { class: 'fp-help' }, `Changes here apply only on ${path}. Each scope keeps its own values; a page value wins over the site value on that page.`) : null,
+    h('div', { class: 'fp-help' },
       'Change styles everywhere at once. Tokens change at the source. Colors and fonts without a token are replaced in every rule that uses them. Element edits on the Edit tab still win.',
       state.themeMode ? ' Color edits apply to the theme you are viewing and are mirrored into the other one.' : ''),
     sec('Fonts', true,

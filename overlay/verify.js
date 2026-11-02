@@ -38,6 +38,10 @@ export async function verify(file, doc = view.doc) {
         result.skipped.push({ id: c.id, reason: `${c.type}: nothing to check on the page` })
         continue
       }
+      if (c.type === 'keyframes') {
+        result.skipped.push({ id: c.id, reason: 'keyframes: check by eye that the animation shows the new colors' })
+        continue
+      }
       if (c.type === 'replace') {
         result.skipped.push({ id: c.id, reason: 'replace: check by eye, or grep the CSS for the old value' })
         continue

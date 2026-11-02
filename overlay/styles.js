@@ -95,6 +95,9 @@ button, input, select, textarea { font-size: 10px; }
 .fp-btn:disabled { opacity: .4; cursor: default; }
 .fp-icon { border: 0; background: none; cursor: pointer; padding: 2px 4px; border-radius: 3px; font-size: 10px; color: var(--fp-muted); }
 .fp-icon:hover { background: var(--fp-raised); color: var(--fp-ink); }
+.fp-chips { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.fp-hbtn { font-size: 14px; line-height: 1; min-width: 24px; height: 24px; padding: 0 5px; border-radius: 4px; }
+.fp-hbtn.on { font-size: 11px; }
 
 .fp-sec { border-bottom: 1px solid var(--fp-line); padding: 6px 0; }
 .fp-sec > summary { cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;

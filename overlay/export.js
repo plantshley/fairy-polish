@@ -1,6 +1,7 @@
 // Builds the change file (JSON for the agent, Markdown for you) and writes it
 // into the project through the dev server, or to the clipboard as a fallback.
 
+import { CHIP_RE } from './controls.js'
 import { base } from './config.js'
 import { getChanges, markSaved } from './store.js'
 import { DISPLAY_NAME } from './dom.js'
@@ -56,7 +57,8 @@ export function toMarkdown(file) {
     lines.push(`- Screen: ${sizeText(t.media)}`)
     if (t.theme && t.theme !== 'both') lines.push(`- Theme: ${t.theme}`)
     if (c.type === 'style') for (const [p, v] of Object.entries(c.props)) lines.push(`- \`${p}\`: \`${v.from}\` → \`${v.to}\`${v.toToken ? ` (token \`${v.toToken}\`)` : ''}${v.mirrored ? ' (mirrored from the other theme)' : ''}${v.fontUrl ? ` (load ${v.fontUrl})` : ''}`)
-    if (c.type === 'replace') lines.push(`- Replace every ${c.kind} \`${c.from}\` with \`${c.to}\` in the site’s CSS${c.fontUrl ? ` (load ${c.fontUrl})` : ''}`)
+    if (c.type === 'replace') lines.push(`- Replace every ${c.kind} \`${c.from}\` with \`${c.to}\` in the site’s CSS${c.target.route ? `, on ${c.target.route} only` : ''}${c.fontUrl ? ` (load ${c.fontUrl})` : ''}`)
+    if (c.type === 'keyframes') lines.push(`- Recolor \`@keyframes ${c.name}\`: ${colorPairs(c.from, c.to).map(([a, b]) => `\`${a}\` → \`${b}\``).join(', ')}`)
     if (c.type === 'galleryAdd') lines.push(`- Add to the fairy polish gallery as “${c.name}”: ${c.found.kind}${c.found.name ? ` \`${c.found.name}\`` : ''}${c.found.pseudo ? ` on \`${c.found.pseudo}\`` : ''}`)
     if (c.type === 'reorder') lines.push(`- Move into ${describe(c.to.parent)}${c.to.before ? `, before ${describe(c.to.before)}` : ', at the end'}`)
     if (c.type === 'freeMove') lines.push(`- Offset ${c.dx}px, ${c.dy}px at ${c.viewport.w}×${c.viewport.h}. Approximate: pick a responsive equivalent.`)
@@ -93,4 +95,19 @@ export async function copyChanges() {
   } catch {
     toast('Clipboard blocked by the browser')
   }
+}
+
+// The colors that changed between two versions of a keyframes block.
+function colorPairs(from, to) {
+  const a = from.match(CHIP_RE) || []
+  const b = to.match(CHIP_RE) || []
+  const seen = new Set()
+  const out = []
+  a.forEach((c, i) => {
+    if (b[i] && b[i] !== c && !seen.has(c)) {
+      seen.add(c)
+      out.push([c, b[i]])
+    }
+  })
+  return out
 }

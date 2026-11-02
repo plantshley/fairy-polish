@@ -46,21 +46,23 @@ export function renderGallery(body, el) {
   const grid = h('div', { class: 'fp-grid' })
   body.append(head, part, cats, grid)
   loadCatalog().then((list) => {
-    const shown = list.filter((e) => cat === 'all' || e.category === cat)
+    const shown = list.filter((e) => cat === 'all' || e.category === cat || e.alsoIn?.[cat])
     if (!list.length) grid.append(h('div', { class: 'fp-empty', style: { gridColumn: '1 / -1' } }, 'No effects found. The gallery lives in the fairy-polish repo under effects/.'))
-    for (const meta of shown) grid.append(card(meta, el, body))
+    for (const meta of shown) grid.append(card(meta, el, body, { ...defaultsFor(meta), ...(cat !== meta.category && meta.alsoIn?.[cat]) }))
     grid.append(customCard(el, body))
   })
 }
 
-function card(meta, el, body) {
+// params: the defaults, with the category's overrides when the effect is
+// listed under a second category (glow as a loop, shimmer on hover).
+function card(meta, el, body, params) {
   const sample = h('div', { class: 'fp-sample' }, 'Aa')
   const thumb = h('div', { class: 'fp-thumb' + (meta.target === 'background' ? ' bg' : '') }, sample)
   const c = h('div', { class: 'fp-card', title: meta.name }, thumb, meta.name)
   const root = shadowOf(body)
   loadEffect(meta.id, [root]).then((apply) => {
     try {
-      thumbCleanups.push(apply(sample, defaultsFor(meta)))
+      thumbCleanups.push(apply(sample, params))
     } catch {}
   })
   let previewCleanup = null
@@ -74,7 +76,7 @@ function card(meta, el, body) {
     try {
       const unwrap = state.part === 'text' && hasOwnText(el) ? wrapText(el) : null
       const hosts = unwrap ? [...el.querySelectorAll(':scope > [data-fp-text]')] : [el]
-      const undos = hosts.map((n) => apply(n, defaultsFor(meta)))
+      const undos = hosts.map((n) => apply(n, params))
       hosts.forEach((n) => demo(n, true))
       previewCleanup = () => {
         hosts.forEach((n) => demo(n, false))
@@ -93,7 +95,7 @@ function card(meta, el, body) {
     if (!el) return
     safe(previewCleanup)
     previewCleanup = null
-    addEffect(el, meta.id, defaultsFor(meta))
+    addEffect(el, meta.id, { ...params })
     focusEffects(body)
   })
   return c

@@ -43,5 +43,10 @@
   "respectsReducedMotion": true,
   "origin": {
     "builtin": true
+  },
+  "alsoIn": {
+    "hover": {
+      "trigger": "hover"
+    }
   }
 }

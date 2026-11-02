@@ -26,6 +26,10 @@ for (const name of fs.readdirSync(dir).sort()) {
   if (meta.id !== name) errors.push(`${where}: id "${meta.id}" must match the folder name`)
   if (!meta.name) errors.push(`${where}: name is required`)
   if (!CATEGORIES.includes(meta.category)) errors.push(`${where}: category must be one of ${CATEGORIES.join(', ')}`)
+  for (const [c, over] of Object.entries(meta.alsoIn || {})) {
+    if (!CATEGORIES.includes(c)) errors.push(`${where}: alsoIn key "${c}" must be a category`)
+    for (const k of Object.keys(over)) if (!(meta.params || []).some((p) => p.key === k)) errors.push(`${where}: alsoIn.${c}.${k} is not a param`)
+  }
   if (!['element', 'background'].includes(meta.target)) errors.push(`${where}: target must be element or background`)
   if (!meta.origin) errors.push(`${where}: origin is required ({ builtin: true }, { repo, file }, or { url, license })`)
   if (meta.origin?.url && !meta.origin.license) errors.push(`${where}: an effect from a URL needs origin.license`)

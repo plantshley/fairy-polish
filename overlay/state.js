@@ -37,6 +37,7 @@ export const state = {
   // Open/closed state of the Edit tab's sections, by title.
   sections: prefs.sections || {},
   changesBy: prefs.changesBy || 'type',
+  themeScope: 'site', // Theme tab: 'site' or 'page' (this route only)
   tab: 'edit',
   editorTheme: prefs.editorTheme || null, // null = follow the OS
   dock: prefs.dock || 'right',

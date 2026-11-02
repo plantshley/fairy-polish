@@ -293,6 +293,70 @@ export function colorField(name, value, onSet, { key, overridden, token, mirrore
   return wrap
 }
 
+export const CHIP_RE = /#[0-9a-f]{3,8}\b|(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\([^()]*\)/gi
+
+export function colorsIn(value) {
+  const v = String(value || '').trim()
+  const found = v.match(CHIP_RE) || []
+  if (!found.length && /^[a-z]+$/i.test(v) && !/^(none|transparent|currentcolor|inherit|initial|unset)$/i.test(v) && CSS.supports('color', v)) return [v]
+  return [...new Set(found)]
+}
+
+function alphaOf(c) {
+  const m = /^#[0-9a-f]{8}$/i.exec(c)
+  if (m) return parseInt(c.slice(7), 16) / 255
+  const f = /\(([^)]*)\)/.exec(c)
+  if (!f) return 1
+  const parts = f[1].split(/[\s,/]+/).filter(Boolean)
+  if (!/[,/]/.test(f[1]) || parts.length < 4) return 1
+  const a = parts[parts.length - 1]
+  return a.endsWith('%') ? parseFloat(a) / 100 : parseFloat(a)
+}
+
+function withAlpha(hex, orig) {
+  const a = alphaOf(orig)
+  if (!(a < 1)) return hex
+  const n = parseInt(hex.slice(1), 16)
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${+a.toFixed(3)})`
+}
+
+// The opaque color behind an rgb()/rgba()/hex value, so the same color at
+// different alphas shares one swatch. Other syntaxes stand for themselves.
+function baseOf(c) {
+  const m = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/i.exec(c)
+  if (m) return toHex(`rgb(${m[1]}, ${m[2]}, ${m[3]})`)
+  if (/^#[0-9a-f]{3,8}$/i.test(c)) return toHex(c.length > 7 ? c.slice(0, 7) : c.length === 5 ? c.slice(0, 4) : c)
+  return c
+}
+
+// One swatch per color inside a compound value (a shadow, filter, gradient,
+// or keyframes block). Picking swaps that color everywhere in the value,
+// keeping each use's own alpha. Returns null when the value has no colors.
+export function colorChips(value, onSet, { key = 'chips' } = {}) {
+  const groups = new Map()
+  for (const c of colorsIn(value)) {
+    const b = baseOf(c)
+    if (!groups.has(b)) groups.set(b, [])
+    groups.get(b).push(c)
+  }
+  if (!groups.size) return null
+  let cur = String(value)
+  const row = h('div', { class: 'fp-chips' })
+  ;[...groups].forEach(([base, uses], i) => {
+    let now = [...uses]
+    const sw = swatch(base, (hex) => {
+      const next = uses.map((orig) => withAlpha(hex, orig))
+      now.forEach((c, k) => (cur = cur.split(c).join(next[k])))
+      now = next
+      sw.title = hex
+      onSet(cur, { mergeKey: `chip:${key}:${i}` })
+    })
+    sw.title = uses.join(', ')
+    row.append(sw)
+  })
+  return row
+}
+
 // An ordered list of colors: swatches with ✕, plus "+". Starts from `colors`.
 export function colorList(colors, onSet, { min = 2 } = {}) {
   const list = [...colors]

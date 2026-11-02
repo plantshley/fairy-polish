@@ -384,7 +384,7 @@
         "default": "hover",
         "options": [
           "hover",
-          "always"
+          "loop"
         ]
       },
       {
@@ -436,6 +436,11 @@
     "origin": {
       "repo": "fairy/fairy-shop",
       "file": "src/index.css (.rainbow-glow-card, Glitter Groovy Rainbow theme)"
+    },
+    "alsoIn": {
+      "loop": {
+        "trigger": "loop"
+      }
     }
   },
   {
@@ -842,6 +847,11 @@
     "respectsReducedMotion": true,
     "origin": {
       "builtin": true
+    },
+    "alsoIn": {
+      "hover": {
+        "trigger": "hover"
+      }
     }
   },
   {

@@ -59,7 +59,16 @@ function decls(c) {
 
 export function buildCss(doc) {
   const out = [replaceCss(doc), '[data-fp-text][data-fp-fx] { display: inline-block; }']
-  for (const c of getChanges()) {
+  const path = doc.defaultView.location.pathname
+  // Page-only changes go last so they win over the same site-wide change.
+  const all = getChanges()
+  for (const c of [...all.filter((x) => !x.target?.route), ...all.filter((x) => x.target?.route)]) {
+    if (c.target?.route && c.target.route !== path) continue
+    // Same-named @keyframes later in the document replace the site's.
+    if (c.type === 'keyframes') {
+      out.push(c.to)
+      continue
+    }
     const d = decls(c)
     if (!d.length) continue
     const sel = previewSelector(c.target)
@@ -208,6 +217,7 @@ function recordComputed(doc) {
   patchSilent((changes) => {
     for (const c of changes) {
       if (c.type !== 'style') continue
+      if (c.target.route && c.target.route !== win.location.pathname) continue
       if (!mediaMatches(c.target.media, w, hgt)) continue
       if (c.target.theme && c.target.theme !== 'both' && c.target.theme !== theme) continue
       const el = doc.querySelector(previewSelector(c.target))
@@ -325,9 +335,10 @@ export function firstFamily(v) {
 }
 
 function replaceCss(doc) {
-  const reps = getChanges().filter((c) => c.type === 'replace')
+  const path = doc.defaultView.location.pathname
+  const reps = getChanges().filter((c) => c.type === 'replace' && (!c.target?.route || c.target.route === path))
   if (!reps.length) return ''
-  const sig = JSON.stringify(reps.map((r) => [r.kind, r.from, r.to])) + doc.styleSheets.length
+  const sig = JSON.stringify(reps.map((r) => [r.kind, r.from, r.to])) + doc.styleSheets.length + path
   const cached = replaceCache.get(doc)
   if (cached?.sig === sig) return cached.css
   const colors = reps.filter((r) => r.kind === 'color').map((r) => ({ from: normalizeColor(doc, r.from), to: r.to })).filter((r) => r.from)

@@ -31,9 +31,28 @@ export function targetFor(el, scope = state.scope, opts = {}) {
 }
 
 // The page's design tokens live on :root; edits to them are site-wide.
-export function rootTarget() {
-  return { kind: 'root', source: null, component: null, selector: ':root', tag: 'html', classes: [], text: '', fpId: 'root', scope: 'selector', classSelector: ':root' }
+// The Theme tab's "this page" scope limits a site-wide change to the
+// current route.
+function pageRoute() {
+  return state.themeScope === 'page' ? view.win.location.pathname : undefined
 }
+
+export function rootTarget() {
+  const t = { kind: 'root', source: null, component: null, selector: ':root', tag: 'html', classes: [], text: '', fpId: 'root', scope: 'selector', classSelector: ':root' }
+  const route = pageRoute()
+  if (route) t.route = route
+  return t
+}
+
+function siteTarget() {
+  const t = { kind: 'site', selector: '*', tag: '*', classes: [], text: '', fpId: 'site', scope: 'selector', media: allMedia() }
+  const route = pageRoute()
+  if (route) t.route = route
+  return t
+}
+
+// Only changes for this page, or for every page, depending on the scope.
+const sameRoute = (c) => (c.target?.route || undefined) === pageRoute()
 
 export function currentSize() {
   return state.frameSize || viewportSize()
@@ -163,8 +182,8 @@ export function tokenValue(name) {
 // kind: 'color' | 'font'
 export function setReplace(kind, from, to, opts = {}) {
   commit((changes) => {
-    const i = changes.findIndex((c) => c.type === 'replace' && c.kind === kind && c.from === from)
-    const target = { kind: 'site', selector: '*', tag: '*', classes: [], text: '', fpId: 'site', scope: 'selector', media: allMedia() }
+    const i = changes.findIndex((c) => c.type === 'replace' && c.kind === kind && c.from === from && sameRoute(c))
+    const target = siteTarget()
     if (!to || to === from) {
       if (i >= 0) changes.splice(i, 1)
       return
@@ -175,7 +194,26 @@ export function setReplace(kind, from, to, opts = {}) {
 }
 
 export function replaceValue(kind, from) {
-  return getChanges().find((c) => c.type === 'replace' && c.kind === kind && c.from === from)?.to || null
+  return getChanges().find((c) => c.type === 'replace' && c.kind === kind && c.from === from && sameRoute(c))?.to || null
+}
+
+// New colors for an @keyframes block the site already has. Keyframes are
+// global, so this changes the animation everywhere it is used.
+export function setKeyframes(el, name, from, to, opts = {}) {
+  const target = targetFor(el, 'instance', { part: 'element' })
+  commit((changes) => {
+    const i = changes.findIndex((c) => c.type === 'keyframes' && c.name === name)
+    if (to === from) {
+      if (i >= 0) changes.splice(i, 1)
+      return
+    }
+    if (i >= 0) changes[i].to = to
+    else changes.push({ id: nextId(), type: 'keyframes', name, from, to, target: { ...target, media: allMedia() } })
+  }, opts.mergeKey ? opts.mergeKey + '|kf:' + name : null)
+}
+
+export function keyframesValue(name) {
+  return getChanges().find((c) => c.type === 'keyframes' && c.name === name)?.to || null
 }
 
 /* ── names, text, effects ───────────────────────────────────────────────── */

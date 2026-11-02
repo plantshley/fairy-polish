@@ -141,7 +141,7 @@ export function targetKey(t) {
 }
 
 function variant(t) {
-  return (t.part === 'text' ? '|text' : '') + (t.state ? '|' + t.state : '') + (t.pseudo || '')
+  return (t.part === 'text' ? '|text' : '') + (t.state ? '|' + t.state : '') + (t.pseudo || '') + (t.route ? '|route:' + t.route : '')
 }
 
 function bucketKey(target, media, theme) {
