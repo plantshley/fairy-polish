@@ -78,9 +78,24 @@ function live() {
 }
 
 function block(e) {
-  if (!live() || isEditor(e) || editing) return
+  if (!live() || isEditor(e)) return
+  if (editing && guardEditing(e)) return
   e.preventDefault()
   e.stopPropagation()
+}
+
+// While text is being edited, pointer events on it (or on a button or link
+// around it) stay away from the site but keep their default, so the caret
+// still moves. Returns true when the event was handled here.
+function guardEditing(e) {
+  const t = e.target
+  if (t.nodeType === 1 && (editing.contains(t) || t.contains(editing))) {
+    e.stopPropagation()
+    if (e.type === 'click' || e.type === 'submit') e.preventDefault()
+    return true
+  }
+  if (e.type === 'pointerdown' || e.type === 'mousedown') editing.fpFinish?.(true)
+  return false
 }
 
 function onMove(e) {
@@ -93,7 +108,8 @@ function onMove(e) {
 }
 
 function onClick(e) {
-  if (!live() || isEditor(e) || editing) return
+  if (!live() || isEditor(e)) return
+  if (editing && guardEditing(e)) return
   e.preventDefault()
   e.stopPropagation()
   let t = e.target
@@ -110,6 +126,7 @@ export function select(el) {
 
 function onDbl(e) {
   if (!live() || isEditor(e)) return
+  if (editing && guardEditing(e)) return
   e.preventDefault()
   e.stopPropagation()
   const el = state.selected
@@ -133,9 +150,15 @@ export function startTextEdit(el) {
   el.focus()
   const sel = el.ownerDocument.getSelection()
   sel.selectAllChildren(el)
+  const doc = el.ownerDocument
+  let done = false
   const finish = (save) => {
+    if (done) return
+    done = true
     el.removeEventListener('blur', onBlur)
-    el.removeEventListener('keydown', onKey)
+    doc.removeEventListener('keydown', onKey, true)
+    doc.removeEventListener('keyup', onKeyUp, true)
+    delete el.fpFinish
     el.removeAttribute('contenteditable')
     const next = el.textContent
     // Put the shipped text back first; the preview re-applies the edit, so
@@ -150,19 +173,30 @@ export function startTextEdit(el) {
     else uiChanged('rerender')
   }
   const onBlur = () => finish(true)
+  // Keys never reach the site's own handlers while editing. Space and Enter
+  // on a focused <button> would click it, so those defaults are stopped too
+  // (a space is inserted by hand).
   const onKey = (e) => {
     e.stopPropagation()
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      el.blur()
-    }
-    if (e.key === 'Escape') {
-      el.removeEventListener('blur', onBlur)
+      finish(true)
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
       finish(false)
+    } else if (e.key === ' ' && e.target !== el && e.target.contains?.(el)) {
+      e.preventDefault()
+      doc.execCommand('insertText', false, ' ')
     }
   }
+  const onKeyUp = (e) => {
+    e.stopPropagation()
+    if (e.key === ' ' && e.target !== el && e.target.contains?.(el)) e.preventDefault()
+  }
+  el.fpFinish = finish
   el.addEventListener('blur', onBlur)
-  el.addEventListener('keydown', onKey)
+  doc.addEventListener('keydown', onKey, true)
+  doc.addEventListener('keyup', onKeyUp, true)
 }
 
 /* ── drawing ────────────────────────────────────────────────────────────── */
@@ -347,7 +381,7 @@ function siblingInfo(el) {
 }
 
 function recordFreeMove(el, dx, dy) {
-  const target = targetFor(el)
+  const target = targetFor(el, state.scope, { part: 'element' })
   target.media = currentMedia()
   commit((changes) => {
     const existing = changes.find((c) => c.type === 'freeMove' && c.target.fpId === target.fpId && c.target.media.query === target.media.query)
@@ -364,17 +398,17 @@ function recordFreeMove(el, dx, dy) {
 function recordReorder(el, t) {
   if (t.parent === el.parentElement && (t.before === el || t.before === el.nextElementSibling)) return
   const parent = el.parentElement
-  const target = targetFor(el, 'instance')
+  const target = targetFor(el, 'instance', { part: 'element' })
   target.media = currentMedia()
   commit((changes) =>
     changes.push({
       id: nextId(),
       type: 'reorder',
       target,
-      from: { parent: targetFor(parent, 'instance'), index: [...parent.children].indexOf(el) },
+      from: { parent: targetFor(parent, 'instance', { part: 'element' }), index: [...parent.children].indexOf(el) },
       to: {
-        parent: targetFor(t.parent, 'instance'),
-        before: t.before ? targetFor(t.before, 'instance') : null,
+        parent: targetFor(t.parent, 'instance', { part: 'element' }),
+        before: t.before ? targetFor(t.before, 'instance', { part: 'element' }) : null,
         index: t.before ? [...t.parent.children].indexOf(t.before) : t.parent.children.length,
       },
     }),

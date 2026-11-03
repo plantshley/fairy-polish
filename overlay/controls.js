@@ -3,6 +3,7 @@
 // Menus are the editor's own (fp-menu), never the browser's <select>.
 
 import { h } from './dom.js'
+import { PALETTES } from '../effects/_lib/palettes.js'
 
 const NUM = /^(-?\d*\.?\d+)([a-z%]*)$/i
 
@@ -405,7 +406,7 @@ export function parseGradient(value) {
   else if (/^to /.test(parts[0])) {
     const dir = parts.shift()
     g.angle = { 'to top': 0, 'to right': 90, 'to bottom': 180, 'to left': 270, 'to top right': 45, 'to bottom right': 135, 'to bottom left': 225, 'to top left': 315 }[dir] ?? 180
-  } else if (m[1] === 'radial' && !/^(#|rgb|hsl|[a-z]+$)/i.test(parts[0])) parts.shift()
+  } else if (m[1] === 'radial' && !isColorStop(parts[0])) g.shape = parts.shift()
   for (const p of parts) {
     const pm = p.match(/^(.*?)(?:\s+(-?[\d.]+)%)?$/)
     g.stops.push({ color: pm[1].trim(), pos: pm[2] != null ? parseFloat(pm[2]) : null })
@@ -417,10 +418,21 @@ export function parseGradient(value) {
   return n >= 2 ? g : null
 }
 
+// "red 20%", "rgb(1 2 3)", "#abc 0%": a stop starts with a color. "circle",
+// "ellipse at top", "closest-side at 30% 40%": a radial prelude does not.
+function isColorStop(part) {
+  const first = String(part).trim().match(/^(\w+\([^)]*\)|#[0-9a-f]+|[a-z-]+)/i)?.[0] || ''
+  return CSS.supports('color', first)
+}
+
 export function gradientCss(g) {
   const stops = g.stops.map((s) => `${s.color} ${s.pos}%`).join(', ')
-  return g.type === 'radial' ? `radial-gradient(circle, ${stops})` : `linear-gradient(${g.angle}deg, ${stops})`
+  return g.type === 'radial' ? `radial-gradient(${g.shape || 'circle'}, ${stops})` : `linear-gradient(${g.angle}deg, ${stops})`
 }
+
+// Named color sets for the gradient editor's presets menu: the same palettes
+// the effects use, so a gradient can match an effect.
+export const GRADIENT_PRESETS = Object.entries(PALETTES).map(([name, colors]) => ({ value: name, label: name, colors }))
 
 const DEFAULT_GRADIENT = { type: 'linear', angle: 135, stops: [{ color: '#f9a8d4', pos: 0 }, { color: '#a78bfa', pos: 100 }] }
 
@@ -430,13 +442,23 @@ export function gradientEditor(value, onSet, { key = 'gradient', onClear } = {})
   const g = structuredClone(parseGradient(value) || DEFAULT_GRADIENT)
   const wrap = h('div', { class: 'fp-grad' })
   const send = (merge) => {
+    const css = gradientCss(g)
+    if (!CSS.supports('background-image', css)) return
     strip.style.background = gradientCss({ ...g, type: 'linear', angle: 90 })
-    onSet(gradientCss(g), { mergeKey: merge ? key : null })
+    onSet(css, { mergeKey: merge ? key : null })
+  }
+  const preset = (name) => {
+    const colors = PALETTES[name]
+    if (!colors) return
+    g.stops = colors.map((color, i) => ({ color, pos: Math.round((i / (colors.length - 1)) * 100) }))
+    send()
+    draw()
   }
   const strip = h('div', { class: 'fp-grad-strip', style: { background: gradientCss({ ...g, type: 'linear', angle: 90 }) } })
   const draw = () => {
     const head = h('div', { class: 'fp-row' },
       dropdown(g.type, ['linear', 'radial'], (v) => { g.type = v; send(); draw() }, { cls: 'sm' }),
+      dropdown('presets', GRADIENT_PRESETS.map((p) => ({ value: p.value, label: p.label, swatch: `linear-gradient(90deg, ${p.colors.join(', ')})` })), preset, { cls: 'sm', title: 'Color presets (keeps the type and angle)' }),
       g.type === 'linear'
         ? combo(g.angle + 'deg', ['0deg', '45deg', '90deg', '135deg', '180deg', '225deg', '270deg', '315deg'], (v) => { g.angle = parseFloat(v) || 0; send() }, { key: key + ':angle', numeric: true, cls: 'sm' })
         : null,

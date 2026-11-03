@@ -51,14 +51,50 @@ function ensure(doc, t) {
   return el && el.dataset.fpId === t.fpId ? el : null
 }
 
-function decls(c) {
+function decls(c, doc) {
   if (c.type === 'style') return Object.entries(c.props).map(([p, v]) => `${p}: ${v.to} !important;`)
-  if (c.type === 'freeMove') return [`translate: ${c.dx}px ${c.dy}px !important;`]
+  if (c.type === 'freeMove') return [`translate: ${c.dx}px ${c.dy}px !important;`, ...moveFixes(doc, c.target)]
   return []
 }
 
+// translate does nothing to an inline box, so a moved inline element becomes
+// inline-block. A box that moves on its own inside a background-clip: text
+// ancestor drops out of that clip and its inherited transparent fill shows
+// nothing, so it carries the ancestor's background and clip itself.
+function moveFixes(doc, t) {
+  const el = byId(doc, t.fpId)
+  if (!el) return []
+  const win = doc.defaultView
+  const out = []
+  // Read with the preview off, or this rule's own display would undo it.
+  const own = withPreviewOff(doc, () => {
+    const cs = win.getComputedStyle(el)
+    return { display: cs.display, clip: cs.backgroundClip === 'text' || cs.webkitBackgroundClip === 'text' }
+  })
+  if (own.display === 'inline') out.push('display: inline-block !important;')
+  if (own.clip) return out
+  for (let a = el.parentElement; a && a !== doc.body; a = a.parentElement) {
+    const cs = win.getComputedStyle(a)
+    if (cs.backgroundClip !== 'text' && cs.webkitBackgroundClip !== 'text') continue
+    out.push(
+      `background-image: ${cs.backgroundImage} !important;`,
+      `background-size: ${cs.backgroundSize} !important;`,
+      `background-position: ${cs.backgroundPosition} !important;`,
+      `background-repeat: ${cs.backgroundRepeat} !important;`,
+      '-webkit-background-clip: text !important;',
+      'background-clip: text !important;',
+    )
+    break
+  }
+  return out
+}
+
 export function buildCss(doc) {
-  const out = [replaceCss(doc), '[data-fp-text][data-fp-fx] { display: inline-block; }']
+  const out = [
+    replaceCss(doc),
+    '[data-fp-text][data-fp-fx] { display: inline-block; }',
+    '[data-fp-text][data-fp-clip][data-fp-fx] { background: inherit; -webkit-background-clip: text; background-clip: text; }',
+  ]
   const path = doc.defaultView.location.pathname
   // Page-only changes go last so they win over the same site-wide change.
   const all = getChanges()
@@ -69,7 +105,7 @@ export function buildCss(doc) {
       out.push(c.to)
       continue
     }
-    const d = decls(c)
+    const d = decls(c, doc)
     if (!d.length) continue
     const sel = previewSelector(c.target)
     const wrapped = themeWrap(sel, c.target.theme || 'both', state.themeMode, state.forcedTheme)
@@ -258,6 +294,11 @@ export function teardown(doc) {
 
 const wrapped = new WeakMap() // doc → { sig, undo: [fn] }
 
+function clipsText(el) {
+  const cs = el.ownerDocument.defaultView.getComputedStyle(el)
+  return cs.backgroundClip === 'text' || cs.webkitBackgroundClip === 'text'
+}
+
 export function hasOwnText(el) {
   return [...el.childNodes].some((n) => n.nodeType === 3 && n.nodeValue.trim()) || !!textWrapper(el)
 }
@@ -275,6 +316,7 @@ export function wrapText(el) {
     if (n.nodeType !== 3 || !n.nodeValue.trim()) continue
     const s = doc.createElement('span')
     s.setAttribute('data-fp-text', '')
+    if (clipsText(el)) s.setAttribute('data-fp-clip', '')
     n.replaceWith(s)
     s.append(n)
     spans.push(s)
@@ -301,7 +343,7 @@ function renderWrappers(doc) {
     try {
       els = doc.querySelectorAll(sel)
     } catch {}
-    for (const el of els) undo.push(wrapText(el))
+    for (const el of els) if (!el.isContentEditable) undo.push(wrapText(el))
   }
   wrapped.set(doc, { sig, undo, spans: [...doc.querySelectorAll('[data-fp-text]')] })
 }
