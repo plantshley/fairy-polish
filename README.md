@@ -22,7 +22,7 @@ New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\skills\fairy-polish"
 
 | Do | How |
 | --- | --- |
-| Select | Click. Alt+click selects the parent. The breadcrumb row picks any ancestor. |
+| Select | Click. Alt+click selects the parent. Ctrl+click lists everything under the pointer, including covered and click-through elements such as background images. The breadcrumb row picks any ancestor. |
 | Use the site | ♡ in the header lets clicks reach links and buttons. Click it again to go back to selecting. |
 | Collapse / resize the panel | ▾ shrinks the panel to a pill and keeps your edits showing. Drag the panel's inner edge to change its width. |
 | Resize an element | Drag any of the 8 handles on the selection box. |

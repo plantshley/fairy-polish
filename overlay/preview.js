@@ -51,27 +51,45 @@ function ensure(doc, t) {
   return el && el.dataset.fpId === t.fpId ? el : null
 }
 
-function decls(c, doc) {
+function decls(c, doc, z) {
   if (c.type === 'style') return Object.entries(c.props).map(([p, v]) => `${p}: ${v.to} !important;`)
-  if (c.type === 'freeMove') return [`translate: ${c.dx}px ${c.dy}px !important;`, ...moveFixes(doc, c.target)]
+  if (c.type === 'freeMove') return moveDecls(doc, c, z)
   return []
 }
 
-// translate does nothing to an inline box, so a moved inline element becomes
-// inline-block. A box that moves on its own inside a background-clip: text
-// ancestor drops out of that clip and its inherited transparent fill shows
-// nothing, so it carries the ancestor's background and clip itself.
-function moveFixes(doc, t) {
-  const el = byId(doc, t.fpId)
-  if (!el) return []
+// A static or relative box moves with a relative offset: no transform, so no
+// compositing layer (Chrome can drop background-clip: text on a composited
+// box) and inline boxes move too. Absolute, fixed, and sticky boxes keep
+// their insets and move with translate, which needs a non-inline box.
+// A box that moves on its own inside a background-clip: text ancestor drops
+// out of that clip and its inherited transparent fill shows nothing, so it
+// carries the ancestor's background and clip itself. A moved box also paints
+// above the page in front of it (see liftMoved).
+function moveDecls(doc, c, z) {
+  const el = byId(doc, c.target.fpId)
+  const shift = `translate: ${c.dx}px ${c.dy}px !important;`
+  if (!el) return [shift]
   const win = doc.defaultView
   const out = []
-  // Read with the preview off, or this rule's own display would undo it.
+  // Read with the preview off, or this rule's own values would feed back in.
   const own = withPreviewOff(doc, () => {
     const cs = win.getComputedStyle(el)
-    return { display: cs.display, clip: cs.backgroundClip === 'text' || cs.webkitBackgroundClip === 'text' }
+    return {
+      display: cs.display,
+      position: cs.position,
+      left: cs.position === 'relative' && cs.left !== 'auto' ? cs.left : '0px',
+      top: cs.position === 'relative' && cs.top !== 'auto' ? cs.top : '0px',
+      clip: cs.backgroundClip === 'text' || cs.webkitBackgroundClip === 'text',
+      lift: liftMoved(el, z),
+    }
   })
-  if (own.display === 'inline') out.push('display: inline-block !important;')
+  if (own.position === 'static' || own.position === 'relative') {
+    out.push('position: relative !important;', `left: calc(${own.left} + ${c.dx}px) !important;`, `top: calc(${own.top} + ${c.dy}px) !important;`)
+  } else {
+    out.push(shift)
+    if (own.display === 'inline') out.push('display: inline-block !important;')
+  }
+  if (own.lift) out.push(`z-index: ${z} !important;`)
   if (own.clip) return out
   for (let a = el.parentElement; a && a !== doc.body; a = a.parentElement) {
     const cs = win.getComputedStyle(a)
@@ -89,8 +107,61 @@ function moveFixes(doc, t) {
   return out
 }
 
+// A moved box is painted in DOM order, so it can land behind a later sibling
+// (a neighboring button's glass background hides it). It gets a z-index, and
+// so does each ancestor that forms its own stacking context (backdrop-filter,
+// transform, opacity) without a z-index, since a z-index never escapes one.
+// Climbing stops at an ancestor the site already ordered. z counts up with
+// each move, so a later move paints over an earlier one. Ancestors are marked
+// with data-fp-lift and data-fp-z; buildCss clears the marks on each pass.
+// Returns what the element itself needs: 'pos', 'z', or null.
+function liftMoved(el, z) {
+  for (const { node, how } of trappingAncestors(el)) {
+    node.dataset.fpLift = how
+    node.dataset.fpZ = Math.max(z, +node.dataset.fpZ || 0)
+  }
+  return liftHow(el)
+}
+
+// What a z-index on n needs: 'pos' (a position first), 'z', or null when it
+// already has one.
+function liftHow(n) {
+  const win = n.ownerDocument.defaultView
+  const cs = win.getComputedStyle(n)
+  if (cs.zIndex !== 'auto') return null
+  const pd = n.parentElement && win.getComputedStyle(n.parentElement).display
+  return cs.position === 'static' && !/flex|grid/.test(pd || '') ? 'pos' : 'z'
+}
+
+// Ancestors that form a stacking context without a z-index of their own, up
+// to the first ancestor the site already ordered. A z-index on el can't reach
+// past them, so each needs one too.
+export function trappingAncestors(el) {
+  const win = el.ownerDocument.defaultView
+  const out = []
+  for (let a = el.parentElement; a && a !== el.ownerDocument.body; a = a.parentElement) {
+    const cs = win.getComputedStyle(a)
+    if (cs.zIndex !== 'auto' && (cs.position !== 'static' || /flex|grid/.test(win.getComputedStyle(a.parentElement).display))) break
+    if (!makesStackingContext(cs)) continue
+    const how = liftHow(a)
+    if (how) out.push({ node: a, how })
+  }
+  return out
+}
+
+function makesStackingContext(cs) {
+  return cs.transform !== 'none' || cs.filter !== 'none' || (cs.backdropFilter && cs.backdropFilter !== 'none') || cs.opacity !== '1' ||
+    cs.isolation === 'isolate' || cs.mixBlendMode !== 'normal' || /transform|opacity|filter/.test(cs.willChange) || /paint|strict|content/.test(cs.contain)
+}
+
 export function buildCss(doc) {
+  for (const n of doc.querySelectorAll('[data-fp-lift]')) {
+    delete n.dataset.fpLift
+    delete n.dataset.fpZ
+  }
+  let moves = 0
   const out = [
+    '[data-fp-lift="pos"] { position: relative !important; }',
     replaceCss(doc),
     '[data-fp-text][data-fp-fx] { display: inline-block; }',
     '[data-fp-text][data-fp-clip][data-fp-fx] { background: inherit; -webkit-background-clip: text; background-clip: text; }',
@@ -105,7 +176,7 @@ export function buildCss(doc) {
       out.push(c.to)
       continue
     }
-    const d = decls(c, doc)
+    const d = decls(c, doc, c.type === 'freeMove' ? ++moves : 0)
     if (!d.length) continue
     const sel = previewSelector(c.target)
     const wrapped = themeWrap(sel, c.target.theme || 'both', state.themeMode, state.forcedTheme)
@@ -115,6 +186,7 @@ export function buildCss(doc) {
     if (c.target.media?.query) rule = `@media ${c.target.media.query} { ${rule} }`
     out.push(rule)
   }
+  for (let z = 1; z <= moves; z++) out.push(`[data-fp-lift][data-fp-z="${z}"] { z-index: ${z} !important; }`)
   return out.join('\n')
 }
 

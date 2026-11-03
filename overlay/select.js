@@ -9,6 +9,7 @@ import { setStyle, setText, targetFor, currentMedia, currentSize } from './edit.
 import { commit, nextId } from './store.js'
 import { singleTextNode, unwrapText } from './preview.js'
 import { ownText } from './locate.js'
+import { openMenuAt } from './controls.js'
 
 let root
 let hoverBox
@@ -115,7 +116,39 @@ function onClick(e) {
   let t = e.target
   if (!pickable(t)) return
   if (e.altKey && t.parentElement && pickable(t.parentElement)) t = t.parentElement
+  else if (e.ctrlKey || e.metaKey) return pickUnder(t.ownerDocument, e.clientX, e.clientY)
   select(t)
+}
+
+// Ctrl+click: a menu of every element under the pointer, top first, so a
+// covered one (a faint background logo under full-screen layers) can be
+// picked. Elements with pointer-events: none count too.
+function pickUnder(doc, x, y) {
+  const st = doc.createElement('style')
+  st.textContent = '* { pointer-events: auto !important; }'
+  ;(doc.head || doc.documentElement).append(st)
+  let stack
+  try {
+    stack = doc.elementsFromPoint(x, y).filter((n) => pickable(n) && n !== doc.body)
+  } finally {
+    st.remove()
+  }
+  if (!stack.length) return
+  const f = view.frame?.getBoundingClientRect()
+  const s = f ? view.scale : 1
+  anchor?.remove()
+  anchor = h('div', { style: { position: 'fixed', left: (f?.left || 0) + x * s + 'px', top: (f?.top || 0) + y * s + 'px', width: '1px', height: '1px' } })
+  root.append(anchor)
+  const items = stack.slice(0, 15).map((n, i) => ({ value: i, label: nodeLabel(n), hint: n.closest('[data-fp-comp]')?.dataset.fpComp || '' }))
+  openMenuAt(anchor, items, (i) => select(stack[i]), { current: stack.indexOf(state.selected) })
+}
+
+let anchor = null
+
+function nodeLabel(n) {
+  const cls = [...n.classList].filter((c) => !c.startsWith('fp-')).slice(0, 2).map((c) => '.' + c).join('')
+  const txt = [...n.childNodes].filter((c) => c.nodeType === 3).map((c) => c.nodeValue).join(' ').replace(/\s+/g, ' ').trim()
+  return `${n.localName}${cls}${txt ? ` “${txt.slice(0, 24)}”` : ''}`
 }
 
 export function select(el) {

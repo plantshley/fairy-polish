@@ -29,6 +29,14 @@ The original is a full-screen `position: fixed` layer sized in `vw`. When the ch
 ## Params
 
 - `palette` (Colors): a palette name from `effects/_lib/palettes.js` (default `teal-green`: the original's cyan, teal, and green) or an array. Sphere *i* goes from color *i* to color *i+1*.
+- `count` (Blobs): number of spheres, default `3`. Widths cycle 42, 46, 30 (% of the container width), durations 15s, 18s, 20s.
+- `pattern` (Placement): where the sphere centers start. `classic` is the original three (extra blobs placed at random), `corners` fills corners then edge midpoints, `scattered` is random, `ring` is an ellipse around the center, `diagonal` runs top-left to bottom-right, `cluster` packs them around the center.
+- `spread` (Spread): scales each center's distance from the middle of the container, default `1`.
+- `randomness` (Randomness): 0 to 1. Jitters position (up to 25% of the container), size (±40%), drift direction, duration (±40%), and adds a negative delay so the blobs don't move in step. `0` is the exact pattern.
+- `travel` (Travel): how far each sphere drifts, as % of its own size (`translate` in the keyframe), default `8`, the original's distance.
+- `seed` (Shuffle): picks a different random layout for the same settings.
+
+`layout(params)` in `preview.js` returns each sphere's center, width, angle, drift, scale, duration, and delay; implement the same numbers as one class per sphere, or generate them in JS for a variable count. The keyframe is one shared `to { transform: translate(var(--tx), var(--ty)) scale(var(--ts)); }` with per-sphere custom properties. Center each sphere with negative margins of half its width, since `transform` is taken by the animation.
 - `opacity` (Strength): default `0.7` (`--adv-sphere-opacity`).
 - `blur` (Blur): default `60` px.
 - `size` (Blob size): multiplier on the sphere widths, default `1`.

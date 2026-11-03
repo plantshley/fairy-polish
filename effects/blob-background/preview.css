@@ -1,10 +1,6 @@
-[data-fp-blob] { position: absolute; aspect-ratio: 1; border-radius: 50%; filter: blur(var(--fp-blob-background-blur)) saturate(1.4) brightness(1.15); opacity: var(--fp-blob-background-opacity); font-style: normal; }
-[data-fp-blob="1"] { animation: fp-blob-1 calc(15s * var(--fp-blob-background-speed)) ease-in-out infinite alternate; }
-[data-fp-blob="2"] { animation: fp-blob-2 calc(18s * var(--fp-blob-background-speed)) ease-in-out infinite alternate; }
-[data-fp-blob="3"] { animation: fp-blob-3 calc(20s * var(--fp-blob-background-speed)) ease-in-out infinite alternate; }
-@keyframes fp-blob-1 { to { transform: translate(8%, 8%) scale(1.1); } }
-@keyframes fp-blob-2 { to { transform: translate(-8%, -5%) scale(1.12); } }
-@keyframes fp-blob-3 { from { opacity: calc(var(--fp-blob-background-opacity) * 0.57); } to { transform: translate(-5%, 8%) scale(1.05); opacity: var(--fp-blob-background-opacity); } }
+[data-fp-blob] { position: absolute; aspect-ratio: 1; border-radius: 50%; filter: blur(var(--fp-blob-background-blur)) saturate(1.4) brightness(1.15); opacity: var(--fp-blob-background-opacity); font-style: normal;
+  animation: fp-blob-drift 15s ease-in-out infinite alternate; }
+@keyframes fp-blob-drift { to { transform: translate(var(--tx), var(--ty)) scale(var(--ts)); } }
 [data-fp-blob-glow] { position: absolute; top: 50%; left: 50%; width: 40%; height: 40%; transform: translate(-50%, -50%); filter: blur(30px); font-style: normal;
   animation: fp-blob-glow calc(8s * var(--fp-blob-background-speed)) infinite alternate; }
 @keyframes fp-blob-glow { from { opacity: 0.3; transform: translate(-50%, -50%) scale(0.9); } to { opacity: 0.7; transform: translate(-50%, -50%) scale(1.1); } }

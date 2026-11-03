@@ -51,6 +51,67 @@
         "default": "teal-green"
       },
       {
+        "key": "count",
+        "label": "Blobs",
+        "type": "number",
+        "default": 3,
+        "min": 1,
+        "max": 10,
+        "step": 1
+      },
+      {
+        "key": "pattern",
+        "label": "Placement",
+        "type": "select",
+        "default": "classic",
+        "options": [
+          "classic",
+          "corners",
+          "scattered",
+          "ring",
+          "diagonal",
+          "cluster"
+        ]
+      },
+      {
+        "key": "spread",
+        "label": "Spread",
+        "type": "number",
+        "default": 1,
+        "min": 0.2,
+        "max": 1.6,
+        "step": 0.05,
+        "unit": "×"
+      },
+      {
+        "key": "randomness",
+        "label": "Randomness",
+        "type": "number",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "key": "travel",
+        "label": "Travel",
+        "type": "number",
+        "default": 8,
+        "min": 0,
+        "max": 80,
+        "step": 1,
+        "unit": "%"
+      },
+      {
+        "key": "seed",
+        "label": "Shuffle",
+        "type": "number",
+        "default": 1,
+        "min": 1,
+        "max": 50,
+        "step": 1
+      },
+      {
         "key": "opacity",
         "label": "Strength",
         "type": "number",

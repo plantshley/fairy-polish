@@ -81,10 +81,61 @@ export function findExisting(el) {
   const fxSheets = [...doc.querySelectorAll('style[data-key^="fp-fx-css-"]')].filter((s) => !s.disabled)
   for (const s of fxSheets) s.disabled = true
   try {
-    return withPreviewOff(doc, () => scan(el, doc, win))
+    return withPreviewOff(doc, () => [
+      ...scan(el, doc, win),
+      ...decorative(el, win).flatMap((n) => scan(n, doc, win).filter((fx) => fx.kind === 'animation').map((fx) => ({ ...fx, node: n, label: `${fx.label} on ${nodeName(n)}` }))),
+    ])
   } finally {
     for (const s of fxSheets) s.disabled = false
   }
+}
+
+// Children that only decorate (aria-hidden, or pointer-events: none), such as
+// a ripple or glow layer. They can't be clicked, so their animations show on
+// the element that holds them. Gallery layers are skipped.
+function decorative(el, win, depth = 2) {
+  const out = []
+  for (const c of el.children) {
+    if (c.hasAttribute('data-fp-layer') || c.hasAttribute('data-fp-host')) continue
+    const cs = win.getComputedStyle(c)
+    if (c.getAttribute('aria-hidden') === 'true' || cs.pointerEvents === 'none') out.push(c)
+    if (depth > 1) out.push(...decorative(c, win, depth - 1))
+  }
+  return [...new Set(out)]
+}
+
+function nodeName(n) {
+  const cls = [...n.classList].filter((c) => !c.startsWith('fp-'))[0]
+  return cls ? '.' + cls : n.localName
+}
+
+// Custom properties holding a color that the animation's element or its
+// ::before/::after read in their own rules (box-shadow: 0 0 0 0
+// var(--ripple-color)) or in the keyframes. Editing one recolors the effect
+// where the computed value can't: mid-animation it is always changing.
+function colorVars(el, doc, win, keyframes) {
+  const names = new Set()
+  const grab = (text) => {
+    for (const m of String(text).matchAll(/var\(\s*(--[\w-]+)/g)) names.add(m[1])
+  }
+  grab(keyframes)
+  eachRule(doc, (r) => {
+    if (!r.selectorText || !r.style) return
+    for (const part of list(r.selectorText)) {
+      const bare = part.replace(/::?(before|after)$/, '')
+      let hit = false
+      try {
+        hit = el.matches(bare)
+      } catch {}
+      if (hit) grab(r.style.cssText)
+    }
+  })
+  const out = []
+  for (const name of names) {
+    const v = win.getComputedStyle(el).getPropertyValue(name).trim()
+    if (v && CSS.supports('color', v)) out.push({ name, value: v })
+  }
+  return out
 }
 
 function scan(el, doc, win) {
@@ -111,6 +162,7 @@ function scan(el, doc, win) {
           keyframes: keyframesText(doc, name),
         }
         fx.inGallery = galleryMatch('animation', name)
+        fx.vars = colorVars(el, doc, win, fx.keyframes)
         out.push(fx)
       })
       const durs = list(cs.transitionDuration)
@@ -157,7 +209,7 @@ function scan(el, doc, win) {
     })
     out.push(...hovers.values())
     for (const fx of out) fx.record = recordOf(fx, el)
-    return out
+    return mergePseudos(out)
   }
 }
 
@@ -169,4 +221,17 @@ function recordOf(fx, el) {
   if (fx.kind === 'transition') Object.assign(r, { props: fx.props, duration: fx.duration, timing: fx.timing })
   if (fx.kind === 'hover') Object.assign(r, { selectors: fx.selectors, decls: fx.decls, media: fx.media })
   return r
+}
+
+// One rule often runs the same animation on an element and its ::before and
+// ::after (staggered ripples). Those show as one effect, and edits go to each.
+function mergePseudos(list) {
+  const out = []
+  for (const fx of list) {
+    const first = fx.kind === 'animation' && out.find((o) => o.kind === 'animation' && o.name === fx.name)
+    if (first) first.pseudos.push(fx.pseudo)
+    else out.push(fx.kind === 'animation' ? { ...fx, pseudos: [fx.pseudo] } : fx)
+  }
+  for (const fx of out) if (fx.pseudos?.length > 1) fx.label = `animation ${fx.name} (${fx.pseudos.map((p) => p || 'element').join(', ')})`
+  return out
 }

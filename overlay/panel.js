@@ -23,7 +23,7 @@ import { renderGallery, renderAttached, stopThumbs } from './gallery.js'
 import { renderTheme } from './themetab.js'
 import { saveChanges, copyChanges } from './export.js'
 import { select, startTextEdit } from './select.js'
-import { hasOwnText } from './preview.js'
+import { hasOwnText, trappingAncestors, withPreviewOff } from './preview.js'
 import { findExisting, nth, withNth } from './existing.js'
 import { LENGTHS, SHADOWS, TEXT_SHADOWS, FILTERS } from './presets.js'
 
@@ -317,6 +317,7 @@ function renderEdit() {
       h('div', { class: 'fp-empty' },
         'Click an element to select it.', h('br'),
         'Alt+click selects its parent.', h('br'),
+        'Ctrl+click lists everything under the pointer, to pick a covered element.', h('br'),
         'Double-click text to edit it.', h('br'),
         'Drag ⠿ to reorder. Shift+drag moves freely.', h('br'),
         '♡ in the header lets clicks reach the site.', h('br'),
@@ -543,6 +544,15 @@ function layerField(el) {
     setStyle(el, 'z-index', String(z), { mergeKey: key, part: 'element' })
     // Below zero it would sink behind the parent's own background.
     if (z < 0 && parent) setStyle(parent, 'isolation', 'isolate', { mergeKey: key, part: 'element', scope: 'instance' })
+    // A z-index can't reach past an ancestor that forms its own stacking
+    // context (backdrop-filter, transform, opacity), so raising el raises
+    // those too.
+    if (z > 0) {
+      for (const { node, how } of withPreviewOff(el.ownerDocument, () => trappingAncestors(el))) {
+        if (how === 'pos') setStyle(node, 'position', 'relative', { mergeKey: key, part: 'element' })
+        setStyle(node, 'z-index', String(z), { mergeKey: key, part: 'element' })
+      }
+    }
   }
   const cur = zOf(el)
   return h('div', { class: 'fp-field' },
@@ -589,7 +599,19 @@ function existingSection(el, list) {
   return wrap
 }
 
-function existingCard(el, fx) {
+// Presets for :hover declarations, by property.
+const HOVER_PRESETS = {
+  transform: ['none', 'translateY(-2px)', 'translateY(-4px)', 'scale(1.03)', 'scale(1.05)', 'scale(0.98)', 'rotate(-2deg)'],
+  opacity: ['1', '0.9', '0.8', '0.6', '0.4'],
+  'box-shadow': SHADOWS,
+  'text-shadow': TEXT_SHADOWS,
+  filter: FILTERS,
+}
+
+function existingCard(owner, fx) {
+  // A decorative child's effect is shown on the element holding it, and
+  // edits go to that child.
+  const el = fx.node || owner
   const o = { pseudo: fx.pseudo, part: 'element' }
   const win = el.ownerDocument.defaultView
   const live = () => win.getComputedStyle(el, fx.pseudo)
@@ -608,7 +630,14 @@ function existingCard(el, fx) {
       }, queued ? 'queued for gallery' : '+ gallery')
   rows.push(h('div', { class: 'fp-row' }, h('b', { class: 'grow' }, fx.label), galleryBtn))
   if (fx.kind === 'animation') {
-    const listProp = (prop, val, mk) => setStyle(el, prop, withNth(live().getPropertyValue(prop), fx.index, val, fx.count), { ...o, mergeKey: mk })
+    const key = mk0 => mk0 || 'anim:' + Date.now()
+    const listProp = (prop, val, mk) => {
+      const k = key(mk)
+      for (const pseudo of fx.pseudos || [fx.pseudo]) {
+        const cur = win.getComputedStyle(el, pseudo).getPropertyValue(prop)
+        setStyle(el, prop, withNth(cur, fx.index, val, fx.count), { ...o, pseudo, mergeKey: k })
+      }
+    }
     const cur = live()
     const removed = nth(cur.animationName, fx.index) === 'none'
     const paused = nth(cur.animationPlayState, fx.index) === 'paused'
@@ -620,6 +649,7 @@ function existingCard(el, fx) {
       h('div', { class: 'fp-row' },
         h('button', { class: 'fp-btn' + (paused ? ' on' : ''), onClick: () => listProp('animation-play-state', paused ? 'running' : 'paused') }, paused ? 'paused' : 'pause'),
         h('button', { class: 'fp-btn' + (removed ? ' on' : ''), onClick: () => listProp('animation-name', removed ? fx.name : 'none') }, removed ? 'removed: restore' : 'remove')),
+      ...varColors(el, fx),
       fx.keyframes ? keyframeColors(el, fx) : null,
       ...(fx.pseudo ? pseudoColors(el, o) : []),
       fx.keyframes ? h('details', {}, h('summary', { class: 'fp-kbd' }, 'keyframes'), h('pre', { class: 'fp-kv' }, keyframesValue(fx.name) || fx.keyframes)) : null,
@@ -641,8 +671,8 @@ function existingCard(el, fx) {
       const v = valueFor(el, prop, ho)
       const cur = v.overridden ? v.value : declared
       const set = (val, m) => setStyle(el, prop, val, { ...ho, from: declared, mergeKey: m?.mergeKey })
-      rows.push(textField(prop, cur, set, { key: 'hover:' + prop, overridden: v.overridden }))
-      const ch = colorChips(cur, set, { key: 'hover:' + prop })
+      rows.push(textField(prop, cur, set, { key: 'hover:' + prop, overridden: v.overridden, presets: HOVER_PRESETS[prop] || LENGTHS[prop] }))
+      const ch = colorChips(resolveVars(el, cur), set, { key: 'hover:' + prop })
       if (ch) rows.push(field('colors', ch))
     }
     rows.push(h('div', { class: 'fp-row' },
@@ -657,6 +687,23 @@ function existingCard(el, fx) {
       }, 'turn off')))
   }
   return h('div', { class: 'fp-sub' }, rows)
+}
+
+// var(--x) swapped for its value on el, so colors behind variables get
+// swatches too. Picking one writes the literal color.
+function resolveVars(el, value) {
+  const cs = el.ownerDocument.defaultView.getComputedStyle(el)
+  return String(value).replace(/var\(\s*(--[\w-]+)\s*(?:,[^()]*)?\)/g, (m, name) => cs.getPropertyValue(name).trim() || m)
+}
+
+// Color variables the animation reads (box-shadow: ... var(--ripple-color)).
+// Set on the animated element, so it and its ::before/::after pick it up.
+function varColors(el, fx) {
+  return (fx.vars || []).map(({ name }) => {
+    const v = valueFor(el, name, { part: 'element' })
+    const ch = colorChips(v.value, (val, m) => setStyle(el, name, val, { part: 'element', mergeKey: m?.mergeKey }), { key: 'var' + name })
+    return ch ? field(name, ch, { overridden: v.overridden }) : null
+  })
 }
 
 // Colors inside the animation's @keyframes. Keyframes are shared, so this
