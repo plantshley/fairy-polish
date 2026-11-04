@@ -5,6 +5,12 @@
   "target": "element",
   "params": [
     {
+      "key": "color",
+      "label": "Color",
+      "type": "color",
+      "default": "#ffffff"
+    },
+    {
       "key": "strength",
       "label": "Strength",
       "type": "number",

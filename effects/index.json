@@ -155,6 +155,51 @@
         "label": "Center glow",
         "type": "boolean",
         "default": true
+      },
+      {
+        "key": "grid",
+        "label": "Grid lines",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "gridColor",
+        "label": "Grid color",
+        "type": "color",
+        "default": "#ffffff"
+      },
+      {
+        "key": "noise",
+        "label": "Film grain",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "dust",
+        "label": "Floating dust",
+        "type": "number",
+        "default": 0,
+        "min": 0,
+        "max": 150,
+        "step": 5
+      },
+      {
+        "key": "dustColor",
+        "label": "Dust color",
+        "type": "color",
+        "default": "#ffffff"
+      },
+      {
+        "key": "trail",
+        "label": "Cursor trail",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "parallax",
+        "label": "Follow cursor",
+        "type": "boolean",
+        "default": false
       }
     ],
     "respectsReducedMotion": true,
@@ -170,7 +215,177 @@
     },
     "origin": {
       "repo": "SDSHC-games-hub and SDSHC-check-in",
-      "file": "games-hub src/styles/advanced.css (.adv-gradient-sphere-*); check-in src/ui/ui.css (.gb-sphere-*, .gb-glow) and GradientBackground.jsx"
+      "file": "games-hub src/styles/advanced.css (.adv-gradient-sphere-*); check-in src/ui/ui.css (.gb-sphere-*, .gb-glow) and GradientBackground.jsx",
+      "url": "https://codepen.io/bogdansandu/pen/bNGrzKV",
+      "license": "MIT (CodePen public pen), Bogdan Sandu. The source of the check-in spheres, plus the grid, grain, dust, cursor trail, and cursor follow."
+    }
+  },
+  {
+    "id": "blooming-flowers",
+    "name": "Blooming flowers",
+    "category": "background",
+    "target": "background",
+    "alsoIn": {
+      "entrance": {},
+      "loop": {}
+    },
+    "params": [
+      {
+        "key": "palette",
+        "label": "Flower colors",
+        "type": "palette",
+        "default": "flower"
+      },
+      {
+        "key": "count",
+        "label": "Flowers",
+        "type": "number",
+        "default": 3,
+        "min": 1,
+        "max": 12,
+        "step": 1
+      },
+      {
+        "key": "size",
+        "label": "Size",
+        "type": "number",
+        "default": 0.7,
+        "min": 0.1,
+        "max": 1.2,
+        "step": 0.05
+      },
+      {
+        "key": "randomness",
+        "label": "Randomness",
+        "type": "number",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "key": "sparkles",
+        "label": "Rising sparkles",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "key": "grass",
+        "label": "Grass",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "key": "glow",
+        "label": "Glow",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "key": "speed",
+        "label": "Speed",
+        "type": "number",
+        "default": 1,
+        "min": 0.2,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "key": "seed",
+        "label": "Layout seed",
+        "type": "number",
+        "default": 1,
+        "min": 1,
+        "max": 50,
+        "step": 1
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "repo": "SDSHC-games-hub",
+      "file": "src/styles/games.css (.yib-fl, Year in Bloom) and src/games/planting-sim.js (createBloomElement)",
+      "url": "https://codepen.io/mdusmanansari/pen/BamepLe",
+      "license": "MIT (CodePen public pen), adapted from theArtsy07's https://codepen.io/theArtsy07/pen/oNPOVqB"
+    }
+  },
+  {
+    "id": "bokeh",
+    "name": "Bokeh lights",
+    "category": "background",
+    "target": "background",
+    "alsoIn": {
+      "loop": {}
+    },
+    "params": [
+      {
+        "key": "palette",
+        "label": "Colors",
+        "type": "palette",
+        "default": "bokeh"
+      },
+      {
+        "key": "count",
+        "label": "Lights",
+        "type": "number",
+        "default": 20,
+        "min": 3,
+        "max": 60,
+        "step": 1
+      },
+      {
+        "key": "size",
+        "label": "Size",
+        "type": "number",
+        "default": 20,
+        "min": 4,
+        "max": 50,
+        "step": 1,
+        "unit": "%"
+      },
+      {
+        "key": "blur",
+        "label": "Blur",
+        "type": "number",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "key": "speed",
+        "label": "Speed",
+        "type": "number",
+        "default": 1,
+        "min": 0.1,
+        "max": 4,
+        "step": 0.1
+      },
+      {
+        "key": "backdrop",
+        "label": "Fill behind",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "key": "backdropColor",
+        "label": "Fill color",
+        "type": "color",
+        "default": "#3E1E68"
+      },
+      {
+        "key": "seed",
+        "label": "Layout seed",
+        "type": "number",
+        "default": 1,
+        "min": 1,
+        "max": 50,
+        "step": 1
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "url": "https://codepen.io/Mamboleoo/pen/BxMQYQ",
+      "license": "MIT (CodePen public pen), Louis Hoebregts"
     }
   },
   {
@@ -179,6 +394,12 @@
     "category": "hover",
     "target": "element",
     "params": [
+      {
+        "key": "color",
+        "label": "Color",
+        "type": "color",
+        "default": "#ffffff"
+      },
       {
         "key": "strength",
         "label": "Strength",
@@ -203,6 +424,86 @@
     "origin": {
       "repo": "SDSHC-master-dashboard",
       "file": "src/components/NavButton/NavButton.css (.nav-tab-btn-shine)"
+    }
+  },
+  {
+    "id": "color-orbs",
+    "name": "Floating color orbs",
+    "category": "background",
+    "target": "background",
+    "alsoIn": {
+      "loop": {}
+    },
+    "params": [
+      {
+        "key": "palette",
+        "label": "Colors",
+        "type": "palette",
+        "default": "spectrum"
+      },
+      {
+        "key": "count",
+        "label": "Orbs per layer",
+        "type": "number",
+        "default": 40,
+        "min": 3,
+        "max": 80,
+        "step": 1
+      },
+      {
+        "key": "blur",
+        "label": "Blur",
+        "type": "number",
+        "default": 7,
+        "min": 0,
+        "max": 20,
+        "step": 0.5,
+        "unit": "px"
+      },
+      {
+        "key": "scale",
+        "label": "Spread",
+        "type": "number",
+        "default": 1,
+        "min": 0.3,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "key": "speed",
+        "label": "Speed",
+        "type": "number",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "key": "backdrop",
+        "label": "Fill behind",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "key": "backdropColor",
+        "label": "Fill color",
+        "type": "color",
+        "default": "#112233"
+      },
+      {
+        "key": "seed",
+        "label": "Layout seed",
+        "type": "number",
+        "default": 1,
+        "min": 1,
+        "max": 50,
+        "step": 1
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "url": "https://codepen.io/hylobates-lar/pen/bGEQXgm",
+      "license": "MIT (CodePen public pen), hylobates-lar"
     }
   },
   {
@@ -306,6 +607,74 @@
     "respectsReducedMotion": true,
     "origin": {
       "builtin": true
+    }
+  },
+  {
+    "id": "fireflies",
+    "name": "Fireflies",
+    "category": "background",
+    "target": "background",
+    "alsoIn": {
+      "loop": {}
+    },
+    "params": [
+      {
+        "key": "color",
+        "label": "Glow",
+        "type": "color",
+        "default": "#ffff00"
+      },
+      {
+        "key": "count",
+        "label": "Fireflies",
+        "type": "number",
+        "default": 15,
+        "min": 1,
+        "max": 60,
+        "step": 1
+      },
+      {
+        "key": "size",
+        "label": "Size",
+        "type": "number",
+        "default": 6,
+        "min": 2,
+        "max": 20,
+        "step": 1,
+        "unit": "px"
+      },
+      {
+        "key": "range",
+        "label": "Roaming",
+        "type": "number",
+        "default": 1,
+        "min": 0.1,
+        "max": 1.5,
+        "step": 0.05
+      },
+      {
+        "key": "speed",
+        "label": "Speed",
+        "type": "number",
+        "default": 1,
+        "min": 0.2,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "key": "seed",
+        "label": "Layout seed",
+        "type": "number",
+        "default": 1,
+        "min": 1,
+        "max": 50,
+        "step": 1
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "url": "https://codepen.io/mikegolus/pen/Jegvym",
+      "license": "MIT (CodePen public pen), Mike Golus"
     }
   },
   {
@@ -677,6 +1046,181 @@
     }
   },
   {
+    "id": "location-ping",
+    "name": "Location ping ripple",
+    "category": "loop",
+    "target": "element",
+    "alsoIn": {
+      "hover": {
+        "trigger": "hover"
+      }
+    },
+    "params": [
+      {
+        "key": "color",
+        "label": "Color",
+        "type": "color",
+        "default": "#ff4d6d"
+      },
+      {
+        "key": "trigger",
+        "label": "When",
+        "type": "select",
+        "default": "loop",
+        "options": [
+          "loop",
+          "hover"
+        ]
+      },
+      {
+        "key": "rings",
+        "label": "Rings",
+        "type": "number",
+        "default": 3,
+        "min": 1,
+        "max": 6,
+        "step": 1
+      },
+      {
+        "key": "reach",
+        "label": "Reach",
+        "type": "number",
+        "default": 2.5,
+        "min": 1.2,
+        "max": 6,
+        "step": 0.1
+      },
+      {
+        "key": "width",
+        "label": "Ring width",
+        "type": "number",
+        "default": 2,
+        "min": 1,
+        "max": 8,
+        "step": 0.5,
+        "unit": "px"
+      },
+      {
+        "key": "fill",
+        "label": "Filled rings",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "pin",
+        "label": "Center dot",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "duration",
+        "label": "Duration",
+        "type": "number",
+        "default": 2400,
+        "min": 600,
+        "max": 8000,
+        "step": 100,
+        "unit": "ms"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "builtin": true
+    }
+  },
+  {
+    "id": "neon-ripple",
+    "name": "Neon ripple",
+    "category": "click",
+    "target": "element",
+    "alsoIn": {
+      "hover": {
+        "trigger": "hover"
+      },
+      "loop": {
+        "trigger": "loop"
+      }
+    },
+    "params": [
+      {
+        "key": "palette",
+        "label": "Colors",
+        "type": "palette",
+        "default": "neon"
+      },
+      {
+        "key": "trigger",
+        "label": "When",
+        "type": "select",
+        "default": "click",
+        "options": [
+          "click",
+          "hover",
+          "loop"
+        ]
+      },
+      {
+        "key": "rings",
+        "label": "Rings",
+        "type": "number",
+        "default": 3,
+        "min": 1,
+        "max": 6,
+        "step": 1
+      },
+      {
+        "key": "reach",
+        "label": "Reach",
+        "type": "number",
+        "default": 160,
+        "min": 40,
+        "max": 600,
+        "step": 10,
+        "unit": "px"
+      },
+      {
+        "key": "glow",
+        "label": "Glow",
+        "type": "number",
+        "default": 12,
+        "min": 0,
+        "max": 40,
+        "step": 1,
+        "unit": "px"
+      },
+      {
+        "key": "width",
+        "label": "Ring width",
+        "type": "number",
+        "default": 2,
+        "min": 1,
+        "max": 6,
+        "step": 0.5,
+        "unit": "px"
+      },
+      {
+        "key": "clip",
+        "label": "Stay inside",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "duration",
+        "label": "Duration",
+        "type": "number",
+        "default": 900,
+        "min": 300,
+        "max": 4000,
+        "step": 50,
+        "unit": "ms"
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "builtin": true
+    }
+  },
+  {
     "id": "particle-burst",
     "name": "Particle burst (click)",
     "category": "click",
@@ -759,6 +1303,73 @@
     }
   },
   {
+    "id": "pixel-stars",
+    "name": "Parallax pixel stars",
+    "category": "background",
+    "target": "background",
+    "alsoIn": {
+      "loop": {}
+    },
+    "params": [
+      {
+        "key": "color",
+        "label": "Star color",
+        "type": "color",
+        "default": "#ffffff"
+      },
+      {
+        "key": "density",
+        "label": "Density",
+        "type": "number",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "key": "speed",
+        "label": "Speed",
+        "type": "number",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "key": "direction",
+        "label": "Drift",
+        "type": "select",
+        "default": "up",
+        "options": [
+          "up",
+          "down",
+          "left",
+          "right"
+        ]
+      },
+      {
+        "key": "sky",
+        "label": "Night sky behind",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "key": "seed",
+        "label": "Layout seed",
+        "type": "number",
+        "default": 1,
+        "min": 1,
+        "max": 50,
+        "step": 1
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "url": "https://codepen.io/sarazond/pen/LYGbwj",
+      "license": "MIT (CodePen public pen), Saransh Sinha"
+    }
+  },
+  {
     "id": "rainbow-button",
     "name": "Rainbow gradient button",
     "category": "loop",
@@ -788,6 +1399,87 @@
     "origin": {
       "repo": "web-tools-persona-quest (live site)",
       "file": ".rainbow-gradient-button"
+    }
+  },
+  {
+    "id": "rising-particles",
+    "name": "Rising light particles",
+    "category": "background",
+    "target": "background",
+    "alsoIn": {
+      "loop": {}
+    },
+    "params": [
+      {
+        "key": "color",
+        "label": "Color",
+        "type": "color",
+        "default": "#99ffff"
+      },
+      {
+        "key": "count",
+        "label": "Particles",
+        "type": "number",
+        "default": 100,
+        "min": 5,
+        "max": 250,
+        "step": 5
+      },
+      {
+        "key": "size",
+        "label": "Max size",
+        "type": "number",
+        "default": 8,
+        "min": 2,
+        "max": 30,
+        "step": 1,
+        "unit": "px"
+      },
+      {
+        "key": "speed",
+        "label": "Speed",
+        "type": "number",
+        "default": 1,
+        "min": 0.2,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "key": "direction",
+        "label": "Direction",
+        "type": "select",
+        "default": "up",
+        "options": [
+          "up",
+          "down"
+        ]
+      },
+      {
+        "key": "backdrop",
+        "label": "Fill behind",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "backdropColor",
+        "label": "Fill color",
+        "type": "color",
+        "default": "#021027"
+      },
+      {
+        "key": "seed",
+        "label": "Layout seed",
+        "type": "number",
+        "default": 1,
+        "min": 1,
+        "max": 50,
+        "step": 1
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "url": "https://codepen.io/tonkotsuboy/pen/zJbKNN",
+      "license": "MIT (CodePen public pen), Takeshi Kano"
     }
   },
   {

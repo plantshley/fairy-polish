@@ -1,0 +1,9 @@
+[data-fp-ping] { position: absolute; left: 50%; top: 50%; width: 100%; aspect-ratio: 1; border-radius: 50%; box-sizing: border-box; border: var(--fp-location-ping-width) solid var(--fp-location-ping-color); background: var(--fp-location-ping-fill); transform: translate(-50%, -50%) scale(0.2); opacity: 0; animation: fp-ping var(--fp-location-ping-duration) cubic-bezier(0.2, 0.6, 0.35, 1) infinite backwards; pointer-events: none; }
+[data-fp-layer="location-ping"][data-hover] [data-fp-ping] { animation-play-state: paused; visibility: hidden; }
+[data-fp-fx~="location-ping"]:is(:hover, [data-fp-demo]) > [data-fp-layer="location-ping"][data-hover] [data-fp-ping] { animation-play-state: running; visibility: visible; }
+[data-fp-ping-pin] { position: absolute; left: 50%; top: 50%; width: 22%; aspect-ratio: 1; min-width: 6px; border-radius: 50%; background: var(--fp-location-ping-color); transform: translate(-50%, -50%); box-shadow: 0 0 0 3px #fff, 0 1px 4px rgba(0, 0, 0, 0.3); }
+@keyframes fp-ping {
+  0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(var(--fp-location-ping-reach)); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { [data-fp-ping] { animation: none !important; } }

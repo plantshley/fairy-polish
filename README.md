@@ -34,7 +34,7 @@ New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\skills\fairy-polish"
 
 **Screen sizes.** "Edits for" picks which sizes new edits apply to: all sizes, or one of the site's own size ranges (named mobile, tablet, desktop, and so on, from its breakpoints; 640 and 1024 when it has none), plus an optional orientation. Picking a range also shows the page at a size inside it, in a frame, so the site's real media queries run. "Viewing" sets any other size to look at.
 
-**Applies to.** Just this element, every copy of it (everything rendered by the same line of code, such as each card in a list), or every element with its classes. The counts show how many are on the page.
+**Applies to.** Just this element, every copy of it (everything rendered by the same line of code, such as each card in a list), or every element with its classes. Both broader options apply on every page. Every copy shows how many are on this page; the class option also shows how many places in the project's source use those classes. When scopes overlap, the narrower one wins: a "just this element" edit beats "every copy", which beats a class-wide edit.
 
 **Element or text.** "Edit the: text only" makes styles and effects apply only where the element's own text is (a highlight behind the words), not to the whole box. Double-clicking text switches to it.
 
@@ -46,7 +46,7 @@ New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\skills\fairy-polish"
 
 **Effects.** The Effects tab is a gallery with live thumbnails. Hover a card to preview it on the selection, click to attach, then tune its params on the Edit tab. Palettes have a custom option with as many colors as you want. "Custom tag" records a description for anything the gallery lacks. The ⓘ button explains how to add effects and has a prompt to copy.
 
-**Changes tab.** Grouped by type (or by screen size). Tick changes to discard several at once.
+**Changes tab.** Grouped by type (or by screen size). The notes box at the top goes into the change file for the agent, and ✎ adds a note to one change. Tick changes to discard them, or to save or copy only those: with any ticked, Save and Copy take just the ticked ones and leave the rest in the editor.
 
 Edits persist in localStorage per site until you clear them, or until the agent applies the saved file.
 

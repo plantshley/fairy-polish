@@ -1,0 +1,19 @@
+{
+  "id": "rising-particles",
+  "name": "Rising light particles",
+  "category": "background",
+  "target": "background",
+  "alsoIn": { "loop": {} },
+  "params": [
+    { "key": "color", "label": "Color", "type": "color", "default": "#99ffff" },
+    { "key": "count", "label": "Particles", "type": "number", "default": 100, "min": 5, "max": 250, "step": 5 },
+    { "key": "size", "label": "Max size", "type": "number", "default": 8, "min": 2, "max": 30, "step": 1, "unit": "px" },
+    { "key": "speed", "label": "Speed", "type": "number", "default": 1, "min": 0.2, "max": 5, "step": 0.1 },
+    { "key": "direction", "label": "Direction", "type": "select", "default": "up", "options": ["up", "down"] },
+    { "key": "backdrop", "label": "Fill behind", "type": "boolean", "default": false },
+    { "key": "backdropColor", "label": "Fill color", "type": "color", "default": "#021027" },
+    { "key": "seed", "label": "Layout seed", "type": "number", "default": 1, "min": 1, "max": 50, "step": 1 }
+  ],
+  "respectsReducedMotion": true,
+  "origin": { "url": "https://codepen.io/tonkotsuboy/pen/zJbKNN", "license": "MIT (CodePen public pen), Takeshi Kano" }
+}

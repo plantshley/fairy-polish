@@ -1,3 +1,3 @@
-[data-fp-layer="button-shine"] > i { position: absolute; left: -4rem; top: -50%; height: 200%; width: 3rem; background: rgba(255, 255, 255, var(--fp-button-shine-strength)); transform: rotate(30deg); transition: left var(--fp-button-shine-duration); }
+[data-fp-layer="button-shine"] > i { position: absolute; left: -4rem; top: -50%; height: 200%; width: 3rem; background: var(--fp-button-shine-fill); transform: rotate(30deg); transition: left var(--fp-button-shine-duration); }
 [data-fp-fx~="button-shine"]:is(:hover, [data-fp-demo]) > [data-fp-layer="button-shine"] > i { left: calc(100% + 1rem); }
 @media (prefers-reduced-motion: reduce) { [data-fp-layer="button-shine"] > i { transition: none; } }

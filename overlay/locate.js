@@ -115,12 +115,24 @@ export function baseSelector(target) {
   return `[data-fp-id=${cssString(target.fpId)}]`
 }
 
-// The selector a preview rule uses: the base, then the hover state, the text
-// wrapper (part: text), and a pseudo-element.
+// Preview rules are all !important, so between two of them specificity
+// decides. The base goes in :where() and each scope gets a fixed weight, so
+// "just this element" beats "every copy", which beats "all .a.b", however
+// many classes the shared rule names. Within a scope, the later rule wins.
+const WEIGHT = { selector: 1, component: 2, instance: 3 }
+
+function weight(target) {
+  const scope = target.scope === 'component' && target.source ? 'component' : target.scope === 'selector' && target.classSelector ? 'selector' : 'instance'
+  return ':not(#fp-w)'.repeat(WEIGHT[scope])
+}
+
+// The selector a preview rule uses: the weighted base, then the hover state,
+// the text wrapper (part: text), and a pseudo-element.
 export function previewSelector(target) {
+  const w = weight(target)
   return baseSelector(target)
     .split(/,(?![^(]*\))/)
-    .map((s) => s.trim() + (target.state === 'hover' ? ':hover' : '') + (target.part === 'text' ? ' > [data-fp-text]' : '') + (target.pseudo || ''))
+    .map((s) => `:where(${s.trim()})${w}` + (target.state === 'hover' ? ':hover' : '') + (target.part === 'text' ? ' > [data-fp-text]' : '') + (target.pseudo || ''))
     .join(', ')
 }
 

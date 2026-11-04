@@ -17,6 +17,9 @@ export const PALETTES = {
   candy: ['#ff9ad5', '#ffd3a5', '#a0e7e5'],
   gold: ['#ffd700', '#ffec8b', '#f5c542', '#fff5cc'],
   mono: ['#ffffff', '#9ca3af'],
+  bokeh: ['#583C87', '#E45A84', '#FFACAC'],
+  neon: ['#00fff0', '#ff00e6', '#7a5cff'],
+  spectrum: Array.from({ length: 24 }, (_, i) => `hsl(${i * 15}, 100%, 50%)`),
 }
 
 // The colors for a palette param value, falling back to `fallback`.

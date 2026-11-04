@@ -93,10 +93,31 @@ export function nextId() {
   return 'c' + data.seq
 }
 
+// Notes for the agent about the whole change file.
+export function getNotes() {
+  return data.notes || ''
+}
+
+export function setNotes(text) {
+  data.notes = text
+  save()
+}
+
+// A note on one change. Typing is one undo step.
+export function setChangeNote(id, note) {
+  commit((changes) => {
+    const c = changes.find((x) => x.id === id)
+    if (!c) return
+    if (note) c.note = note
+    else delete c.note
+  }, 'note:' + id)
+}
+
 // Remembers which change file the current set was saved as, so the overlay
-// can drop those changes once the agent has applied that file.
-export function markSaved(name) {
-  data.saved = { name, ids: data.changes.map((c) => c.id) }
+// can drop those changes once the agent has applied that file. ids: the
+// changes that went into it (all of them by default).
+export function markSaved(name, ids = data.changes.map((c) => c.id)) {
+  data.saved = { name, ids }
   save()
 }
 
@@ -108,6 +129,7 @@ export function dropApplied() {
   const ids = new Set(data.saved?.ids || [])
   data.changes = data.changes.filter((c) => !ids.has(c.id))
   data.saved = null
+  if (!data.changes.length) data.notes = ''
   save()
   emit('commit')
 }
@@ -163,7 +185,10 @@ export function upsertStyle(changes, target, media, theme, prop, value, extra = 
   } else Object.assign(c, extra)
   const prev = c.props[prop]
   const from = prev ? prev.from : value.from
-  if (value.to === from && !value.toToken) delete c.props[prop]
+  // Back to the shipped value removes the edit, even when that value happens
+  // to match a token: keeping it would pin the property (a leftover
+  // -webkit-text-fill-color blocks every later color change).
+  if (value.to === from && !value.keep) delete c.props[prop]
   else c.props[prop] = { from, to: value.to, ...(value.toToken ? { toToken: value.toToken } : {}), ...(value.mirrored ? { mirrored: true } : {}), ...(value.fontUrl ? { fontUrl: value.fontUrl } : {}) }
   if (!Object.keys(c.props).length) changes.splice(changes.indexOf(c), 1)
   return c

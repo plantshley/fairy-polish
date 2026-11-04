@@ -57,6 +57,11 @@ function isEditor(e) {
   return e.composedPath().some((n) => n?.classList?.contains?.('fp-root'))
 }
 
+// The preview's text wrappers (part: text) stand in for their element.
+function real(el) {
+  return el?.nodeType === 1 && el.hasAttribute('data-fp-text') ? el.parentElement : el
+}
+
 function pickable(el) {
   return el && el.nodeType === 1 && el !== el.ownerDocument.documentElement && !el.closest?.('fp-host, [data-fp-host]')
 }
@@ -104,7 +109,7 @@ function onMove(e) {
     if (!live()) state.hovered = null
     return
   }
-  const t = e.target
+  const t = real(e.target)
   state.hovered = pickable(t) ? t : null
 }
 
@@ -113,7 +118,7 @@ function onClick(e) {
   if (editing && guardEditing(e)) return
   e.preventDefault()
   e.stopPropagation()
-  let t = e.target
+  let t = real(e.target)
   if (!pickable(t)) return
   if (e.altKey && t.parentElement && pickable(t.parentElement)) t = t.parentElement
   else if (e.ctrlKey || e.metaKey) return pickUnder(t.ownerDocument, e.clientX, e.clientY)
@@ -129,7 +134,7 @@ function pickUnder(doc, x, y) {
   ;(doc.head || doc.documentElement).append(st)
   let stack
   try {
-    stack = doc.elementsFromPoint(x, y).filter((n) => pickable(n) && n !== doc.body)
+    stack = [...new Set(doc.elementsFromPoint(x, y).map(real))].filter((n) => pickable(n) && n !== doc.body)
   } finally {
     st.remove()
   }

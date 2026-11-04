@@ -1,0 +1,25 @@
+{
+  "id": "blooming-flowers",
+  "name": "Blooming flowers",
+  "category": "background",
+  "target": "background",
+  "alsoIn": { "entrance": {}, "loop": {} },
+  "params": [
+    { "key": "palette", "label": "Flower colors", "type": "palette", "default": "flower" },
+    { "key": "count", "label": "Flowers", "type": "number", "default": 3, "min": 1, "max": 12, "step": 1 },
+    { "key": "size", "label": "Size", "type": "number", "default": 0.7, "min": 0.1, "max": 1.2, "step": 0.05 },
+    { "key": "randomness", "label": "Randomness", "type": "number", "default": 0.3, "min": 0, "max": 1, "step": 0.05 },
+    { "key": "sparkles", "label": "Rising sparkles", "type": "boolean", "default": true },
+    { "key": "grass", "label": "Grass", "type": "boolean", "default": true },
+    { "key": "glow", "label": "Glow", "type": "boolean", "default": true },
+    { "key": "speed", "label": "Speed", "type": "number", "default": 1, "min": 0.2, "max": 3, "step": 0.1 },
+    { "key": "seed", "label": "Layout seed", "type": "number", "default": 1, "min": 1, "max": 50, "step": 1 }
+  ],
+  "respectsReducedMotion": true,
+  "origin": {
+    "repo": "SDSHC-games-hub",
+    "file": "src/styles/games.css (.yib-fl, Year in Bloom) and src/games/planting-sim.js (createBloomElement)",
+    "url": "https://codepen.io/mdusmanansari/pen/BamepLe",
+    "license": "MIT (CodePen public pen), adapted from theArtsy07's https://codepen.io/theArtsy07/pen/oNPOVqB"
+  }
+}

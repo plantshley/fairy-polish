@@ -4,4 +4,7 @@
 [data-fp-blob-glow] { position: absolute; top: 50%; left: 50%; width: 40%; height: 40%; transform: translate(-50%, -50%); filter: blur(30px); font-style: normal;
   animation: fp-blob-glow calc(8s * var(--fp-blob-background-speed)) infinite alternate; }
 @keyframes fp-blob-glow { from { opacity: 0.3; transform: translate(-50%, -50%) scale(0.9); } to { opacity: 0.7; transform: translate(-50%, -50%) scale(1.1); } }
+[data-fp-blob-grid] { position: absolute; inset: 0; background-size: 40px 40px; font-style: normal; }
+[data-fp-blob-noise] { position: absolute; inset: 0; opacity: 0.05; font-style: normal; }
+[data-fp-blob-dust] { position: absolute; border-radius: 50%; opacity: 0; pointer-events: none; font-style: normal; }
 @media (prefers-reduced-motion: reduce) { [data-fp-blob], [data-fp-blob-glow] { animation: none !important; } }

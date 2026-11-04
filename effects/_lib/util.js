@@ -66,9 +66,13 @@ export function reduced(el) {
   return el.ownerDocument.defaultView.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
+// Any CSS color at an alpha: hex the fast way, anything else (rgb(), a
+// named color, a var()) through color-mix.
 export function rgba(hex, alpha) {
+  const short = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(hex || '')
+  if (short) hex = '#' + short.slice(1).map((c) => c + c).join('')
   const m = /^#?([0-9a-f]{6})$/i.exec(hex || '')
-  if (!m) return hex
+  if (!m) return hex ? `color-mix(in srgb, ${hex} ${Math.round(alpha * 100)}%, transparent)` : hex
   const n = parseInt(m[1], 16)
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`
 }

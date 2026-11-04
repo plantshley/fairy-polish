@@ -10,6 +10,7 @@ Original (master-dashboard `NavButton.css`): the button is `position: relative; 
 
 ## Params
 
+- `color` (Color): color, default `#ffffff`. The band's color; `strength` is its alpha, so the original is `rgba(255,255,255,0.15)`.
 - `strength` (Strength): number, default `0.15`
 - `duration` (Duration): number, default `700` ms
 

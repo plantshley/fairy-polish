@@ -1,5 +1,6 @@
 import { tag, vars, all, layer, positioned, reduced, rgba, tidy } from '../_lib/util.js'
 import { colorsOf } from '../_lib/palettes.js'
+import { boxOf, animations } from '../_lib/rand.js'
 
 // The classic layout is check-in's .gb-sphere-1..3: centers (as fractions of
 // the container), widths in % of its width, and gradient angles.
@@ -103,6 +104,82 @@ function run(el, params) {
     if (still) g.style.animation = 'none'
     l.append(g)
   }
+  const unextras = extras(el, l, params, rng((params.seed ?? 1) + 100), still)
   const unvars = vars(el, id, { blur: params.blur ?? 60, opacity: params.opacity ?? 0.7, speed: 1 / (params.speed || 1) }, { blur: 'px' })
-  return all(tag(el, id), unvars, () => l.remove(), unpos)
+  return all(tag(el, id), unvars, unextras, () => l.remove(), unpos)
+}
+
+const NOISE = `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`
+
+// The wave pen's extras: a faint grid, film grain, drifting dust, a trail of
+// dust behind the cursor, and blobs that lean toward the cursor.
+function extras(el, l, params, rand, still) {
+  const doc = el.ownerDocument
+  const anims = animations()
+  const off = []
+  if (params.grid) {
+    const g = doc.createElement('i')
+    g.setAttribute('data-fp-blob-grid', '')
+    g.style.backgroundImage = `linear-gradient(to right, ${rgba(params.gridColor || '#ffffff', 0.06)} 1px, transparent 1px), linear-gradient(to bottom, ${rgba(params.gridColor || '#ffffff', 0.06)} 1px, transparent 1px)`
+    l.append(g)
+  }
+  if (params.noise) {
+    const n = doc.createElement('i')
+    n.setAttribute('data-fp-blob-noise', '')
+    n.style.backgroundImage = NOISE
+    l.append(n)
+  }
+  const dustColor = params.dustColor || '#ffffff'
+  const { w, h } = boxOf(el)
+  for (let i = 0; i < (params.dust ?? 0); i++) {
+    const p = doc.createElement('i')
+    p.setAttribute('data-fp-blob-dust', '')
+    const s = rand() * 3 + 1
+    const x = rand() * w
+    const y = rand() * h
+    p.style.cssText = `width:${s}px;height:${s}px;left:${x}px;top:${y}px;background:${dustColor};`
+    l.append(p)
+    if (still) {
+      p.style.opacity = 0.3
+      continue
+    }
+    const dur = (rand() * 10 + 10) * 1000
+    const peak = rand() * 0.3 + 0.1
+    anims.add(p.animate([
+      { opacity: 0, transform: 'translate(0, 0)' },
+      { opacity: peak, offset: 0.15 },
+      { opacity: 0, transform: `translate(${((rand() * 20 - 10) * w) / 100}px, ${(-rand() * 30 * h) / 100}px)` },
+    ], { duration: dur, delay: -rand() * dur, iterations: Infinity, easing: 'linear' }))
+  }
+  if ((params.trail || params.parallax) && !still) {
+    let last = 0
+    const onMove = (e) => {
+      const r = el.getBoundingClientRect()
+      const x = e.clientX - r.left
+      const y = e.clientY - r.top
+      if (params.parallax) {
+        const mx = ((x / r.width - 0.5) * 5).toFixed(1)
+        const my = ((y / r.height - 0.5) * 5).toFixed(1)
+        for (const b of l.querySelectorAll('[data-fp-blob]')) b.style.translate = `${mx}px ${my}px`
+      }
+      if (!params.trail || e.timeStamp - last < 16) return
+      last = e.timeStamp
+      const p = doc.createElement('i')
+      p.setAttribute('data-fp-blob-dust', '')
+      const s = Math.random() * 4 + 2
+      p.style.cssText = `width:${s}px;height:${s}px;left:${x}px;top:${y}px;background:${dustColor};`
+      l.append(p)
+      const a = p.animate([
+        { opacity: 0.6, transform: 'translate(0, 0)' },
+        { opacity: 0, transform: `translate(${((Math.random() * 10 - 5) * r.width) / 100}px, ${((Math.random() * 10 - 5) * r.height) / 100}px)` },
+      ], { duration: 2000, easing: 'ease-out' })
+      a.onfinish = () => p.remove()
+    }
+    el.addEventListener('pointermove', onMove)
+    off.push(() => el.removeEventListener('pointermove', onMove))
+  }
+  return () => {
+    anims.stop()
+    off.forEach((f) => f())
+  }
 }

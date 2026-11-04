@@ -43,6 +43,14 @@ The original is a full-screen `position: fixed` layer sized in `vw`. When the ch
 - `speed` (Speed): multiplier. The durations are 15s, 18s, 20s, and 8s divided by it.
 - `glow` (Center glow): include `.gb-glow`, default on.
 
+- `grid` (Grid lines): a 40px grid of 1px lines in `gridColor` at 6% alpha, default off.
+- `noise` (Film grain): an SVG `feTurbulence` grain layer at 5% opacity, default off.
+- `dust` (Floating dust): number of 1 to 4px dots in `dustColor` that fade in, drift up to 30% of the height (±10% sideways), and fade out over 10 to 20s, default `0`.
+- `trail` (Cursor trail): on `pointermove`, add a 2 to 6px dot at the pointer that drifts up to 5% and fades over 2s, default off.
+- `parallax` (Follow cursor): on `pointermove`, shift the spheres up to ±2.5px toward the pointer with the `translate` property (so the drift `transform` keeps running), default off.
+
+The grid, grain, dust, trail, and follow come from [bogdansandu's "Modern Gradient Wave Background"](https://codepen.io/bogdansandu/pen/bNGrzKV) (Bogdan Sandu), which is also where the original spheres come from. CodePen public pens are MIT licensed: credit the author and link the pen in a comment. That pen listens on the whole document; scope the listeners to the element unless the effect covers the page.
+
 ## Reduced motion
 
 Keep the blobs and drop the animation under `prefers-reduced-motion: reduce`.

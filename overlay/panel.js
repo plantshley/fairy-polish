@@ -5,7 +5,7 @@
 
 import { h, clear, put, DISPLAY_NAME } from './dom.js'
 import { state, savePrefs, uiChanged, onUi } from './state.js'
-import { getChanges, subscribe, undo, redo, canUndo, canRedo, clearAll, removeChanges } from './store.js'
+import { getChanges, subscribe, undo, redo, canUndo, canRedo, clearAll, removeChanges, getNotes, setNotes, setChangeNote } from './store.js'
 import {
   lengthField, selectField, textField, colorField, quadField, textInput, dropdown, segmented, combo, field,
   gradientEditor, closeMenu, colorChips,
@@ -26,6 +26,7 @@ import { select, startTextEdit } from './select.js'
 import { hasOwnText, trappingAncestors, withPreviewOff } from './preview.js'
 import { findExisting, nth, withNth } from './existing.js'
 import { LENGTHS, SHADOWS, TEXT_SHADOWS, FILTERS } from './presets.js'
+import { base } from './config.js'
 
 let panel
 let body
@@ -231,6 +232,25 @@ function count(doc, sel) {
   }
 }
 
+// How many places in the project's source use a set of classes together,
+// from the dev server. null while loading or when the server can't say.
+const usage = new Map()
+
+function codeUsage(cls) {
+  const key = cls.join(',')
+  if (usage.has(key)) return usage.get(key)
+  usage.set(key, null)
+  fetch(`${base}/usage?classes=${encodeURIComponent(key)}`)
+    .then((r) => (r.ok ? r.json() : null))
+    .then((u) => {
+      if (!u) return
+      usage.set(key, u)
+      if (state.tab === 'edit') uiChanged('rerender')
+    })
+    .catch(() => {})
+  return null
+}
+
 function scopeRow() {
   const el = state.selected
   const doc = el.ownerDocument
@@ -239,11 +259,15 @@ function scopeRow() {
   const items = [{ value: 'instance', label: 'just this element' }]
   if (src) {
     const n = count(doc, `[data-fp-src="${src}"]`)
-    items.push({ value: 'component', label: `every copy (${n} on page)`, title: `Every element rendered by the same line of code (${src.split('/').pop()}), such as each card in a list` })
+    items.push({ value: 'component', label: `every copy (${n} on this page)`, title: `Everything rendered by ${src.split('/').pop()}, on every page: each card in a list, each use of a component. The count is only what this page shows.` })
   }
   if (cls.length) {
     const sel = '.' + cls.join('.')
-    items.push({ value: 'selector', label: `all ${sel} (${count(doc, sel)} on page)`, title: `Every element with the classes ${sel}, anywhere on the site` })
+    const u = codeUsage(cls)
+    const inCode = u ? `, ${u.places} in code` : ''
+    const where = u?.files.length ? `
+Used in: ${u.files.map((f) => `${f.file} (${f.places})`).join(', ')}` : ''
+    items.push({ value: 'selector', label: `all ${sel} (${count(doc, sel)} on this page${inCode})`, title: `Every element with the classes ${sel}, on every page. "In code" counts the places in the source that use them.${where}` })
   }
   const value = items.some((i) => i.value === state.scope) ? state.scope : 'instance'
   return h('div', { class: 'fp-row', style: { flexWrap: 'nowrap' } },
@@ -258,6 +282,7 @@ function renderChrome() {
   clear(footEl)
   if (state.collapsed) return
   const n = getChanges().filter((c) => c.type !== 'name').length
+  const picked = pickedIds()?.length || 0
   for (const [k, label] of [['edit', 'Edit'], ['theme', 'Theme'], ['effects', 'Effects'], ['changes', `Changes (${n})`]]) {
     tabsEl.append(h('button', { class: state.tab === k ? 'on' : '', onClick: () => { state.tab = k; uiChanged('tab') } }, label))
   }
@@ -266,9 +291,19 @@ function renderChrome() {
     h('button', { class: 'fp-btn', title: 'Redo (Ctrl+Shift+Z)', disabled: canRedo() ? null : true, onClick: redo }, '↷'),
     h('span', { class: 'grow' }),
     h('button', { class: 'fp-btn', disabled: n ? null : true, onClick: () => confirmClear() }, 'Clear'),
-    h('button', { class: 'fp-btn', disabled: n ? null : true, title: 'Copy the change file to the clipboard', onClick: copyChanges }, 'Copy'),
-    h('button', { class: 'fp-btn primary', disabled: n ? null : true, title: 'Write the change file into the project', onClick: saveChanges }, 'Save'),
+    h('button', { class: 'fp-btn', disabled: n ? null : true, title: picked ? 'Copy the checked changes to the clipboard' : 'Copy the change file to the clipboard', onClick: () => copyChanges(pickedIds()) }, picked ? `Copy ${picked}` : 'Copy'),
+    h('button', { class: 'fp-btn primary', disabled: n ? null : true, title: picked ? 'Write only the checked changes into the project. The rest stay here.' : 'Write every change into the project', onClick: () => saveChanges(pickedIds()) }, picked ? `Save ${picked}` : 'Save'),
   )
+}
+
+// Checked changes, or null for all. Names ride along with any change on the
+// same element, since they only label it.
+function pickedIds() {
+  const changes = getChanges()
+  const ids = changes.filter((c) => checked.has(c.id) && c.type !== 'name').map((c) => c.id)
+  if (!ids.length) return null
+  const fps = new Set(changes.filter((c) => ids.includes(c.id)).map((c) => c.target?.fpId))
+  return [...ids, ...changes.filter((c) => c.type === 'name' && fps.has(c.target.fpId)).map((c) => c.id)]
 }
 
 function confirmClear() {
@@ -462,13 +497,38 @@ function textFill(el, C) {
         '-webkit-background-clip': 'text',
         '-webkit-text-fill-color': 'transparent',
       })
-    } else setStyles(el, Object.fromEntries(TEXT_GRADIENT_PROPS.map((p) => [p, shipped(el, p)])))
+    } else setStyles(el, solidText(el))
   })
   return h('div', { style: { display: 'grid', gap: '4px' } },
     field('text fill', mode),
     grad
       ? gradientEditor(valueFor(el, 'background-image').value, (css, o) => setStyle(el, 'background-image', css, o), { key: 'text-gradient' })
-      : C('color', 'color'))
+      : textColor(el))
+}
+
+// Solid: back to the shipped values, or, when the site ships the gradient,
+// turn it off. (Shipped values still count when a broader-scope gradient
+// covers this element: see shadowed() in edit.js.)
+function solidText(el) {
+  const node = el.querySelector(':scope > [data-fp-text]') || el
+  const siteClip = shipped(node, 'background-clip') === 'text' || shipped(node, '-webkit-background-clip') === 'text'
+  if (!siteClip) return Object.fromEntries(TEXT_GRADIENT_PROPS.map((p) => [p, shipped(node, p)]))
+  return { 'background-image': 'none', 'background-clip': 'border-box', '-webkit-background-clip': 'border-box', '-webkit-text-fill-color': 'currentcolor' }
+}
+
+// -webkit-text-fill-color paints over color, so when the site (or an earlier
+// edit) set it to something else, a color change resets it to follow color.
+function textColor(el) {
+  const v = valueFor(el, 'color')
+  const pinned = () => {
+    const node = el.querySelector(':scope > [data-fp-text]') || el
+    const cs = node.ownerDocument.defaultView.getComputedStyle(node)
+    return cs.webkitTextFillColor !== cs.color || valueFor(el, '-webkit-text-fill-color').overridden
+  }
+  return colorField('color', v.value, (val, o) => (pinned() ? setStyles(el, { color: val, '-webkit-text-fill-color': 'currentcolor' }, o) : setStyle(el, 'color', val, o)), {
+    key: 'color', overridden: v.overridden, token: v.token, mirrored: v.mirrored,
+    swatches: pageColorCache.colors, tokens: state.tokens.colors,
+  })
 }
 
 /* ── fill and border ────────────────────────────────────────────────────── */
@@ -764,6 +824,21 @@ const TYPE_GROUPS = [
   ['Names', (c) => c.type === 'name'],
 ]
 
+const noteOpen = new Set()
+
+function changeNote(c) {
+  const ta = h('textarea', { class: 'fp-in', rows: 2, placeholder: 'Note for the agent' })
+  ta.value = c.note || ''
+  ta.style.marginTop = '3px'
+  ta.addEventListener('keydown', (e) => e.stopPropagation())
+  ta.addEventListener('change', () => {
+    noteOpen.delete(c.id)
+    setChangeNote(c.id, ta.value.trim())
+  })
+  if (!c.note) queueMicrotask(() => ta.focus())
+  return ta
+}
+
 function renderChanges() {
   const changes = getChanges()
   for (const id of [...checked]) if (!changes.some((c) => c.id === id)) checked.delete(id)
@@ -787,10 +862,17 @@ function renderChanges() {
     cb.addEventListener('change', () => {
       for (const id of ids) cb.checked ? checked.add(id) : checked.delete(id)
       renderBody()
+      renderChrome()
     })
     return cb
   }
+  const notes = h('textarea', { class: 'fp-in', rows: 2, placeholder: 'Notes for the agent about these changes (saved with the file)' })
+  notes.value = getNotes()
+  notes.addEventListener('keydown', (e) => e.stopPropagation())
+  notes.addEventListener('input', () => setNotes(notes.value))
   const list = h('div', { class: 'fp-changes' },
+    notes,
+    h('div', { class: 'fp-help' }, checked.size ? 'Save and Copy take only the checked changes. The rest stay here.' : 'Save writes every change. Check some to save only those.'),
     h('div', { class: 'fp-selbar' },
       box(changes.map((c) => c.id)),
       h('span', { class: 'fp-kbd' }, 'group by'),
@@ -812,14 +894,22 @@ function renderChanges() {
       cb.addEventListener('change', () => {
         cb.checked ? checked.add(c.id) : checked.delete(c.id)
         renderBody()
+        renderChrome()
       })
+      // Effects edit their note in the Effects section; here it is shown.
+      const own = c.type !== 'effect'
+      const noteBox = own && (c.note || noteOpen.has(c.id)) ? changeNote(c) : null
       put(list,
         h('div', { class: 'fp-change' },
           cb,
           h('div', {},
             h('div', { class: 'what' }, s.what),
-            h('div', { class: 'det', style: { whiteSpace: 'pre-wrap' } }, s.det)),
-          h('button', { class: 'fp-icon', title: 'Discard this change', onClick: () => removeChanges([c.id]) }, '✕')),
+            h('div', { class: 'det', style: { whiteSpace: 'pre-wrap' } }, s.det),
+            !own && c.note ? h('div', { class: 'det' }, 'Note: ' + c.note) : null,
+            noteBox),
+          h('div', { style: { display: 'flex', alignItems: 'flex-start' } },
+            own && !noteBox ? h('button', { class: 'fp-icon', title: 'Add a note for the agent about this change', onClick: () => { noteOpen.add(c.id); renderBody() } }, '✎') : null,
+            h('button', { class: 'fp-icon', title: 'Discard this change', onClick: () => removeChanges([c.id]) }, '✕'))),
       )
     }
   }

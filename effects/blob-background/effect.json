@@ -115,6 +115,51 @@
       "label": "Center glow",
       "type": "boolean",
       "default": true
+    },
+    {
+      "key": "grid",
+      "label": "Grid lines",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "gridColor",
+      "label": "Grid color",
+      "type": "color",
+      "default": "#ffffff"
+    },
+    {
+      "key": "noise",
+      "label": "Film grain",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "dust",
+      "label": "Floating dust",
+      "type": "number",
+      "default": 0,
+      "min": 0,
+      "max": 150,
+      "step": 5
+    },
+    {
+      "key": "dustColor",
+      "label": "Dust color",
+      "type": "color",
+      "default": "#ffffff"
+    },
+    {
+      "key": "trail",
+      "label": "Cursor trail",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "parallax",
+      "label": "Follow cursor",
+      "type": "boolean",
+      "default": false
     }
   ],
   "respectsReducedMotion": true,
@@ -130,6 +175,8 @@
   },
   "origin": {
     "repo": "SDSHC-games-hub and SDSHC-check-in",
-    "file": "games-hub src/styles/advanced.css (.adv-gradient-sphere-*); check-in src/ui/ui.css (.gb-sphere-*, .gb-glow) and GradientBackground.jsx"
+    "file": "games-hub src/styles/advanced.css (.adv-gradient-sphere-*); check-in src/ui/ui.css (.gb-sphere-*, .gb-glow) and GradientBackground.jsx",
+    "url": "https://codepen.io/bogdansandu/pen/bNGrzKV",
+    "license": "MIT (CodePen public pen), Bogdan Sandu. The source of the check-in spheres, plus the grid, grain, dust, cursor trail, and cursor follow."
   }
 }

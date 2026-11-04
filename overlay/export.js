@@ -3,7 +3,7 @@
 
 import { CHIP_RE } from './controls.js'
 import { base } from './config.js'
-import { getChanges, markSaved } from './store.js'
+import { getChanges, getNotes, markSaved } from './store.js'
 import { DISPLAY_NAME } from './dom.js'
 import { describe } from './locate.js'
 import { state } from './state.js'
@@ -17,7 +17,10 @@ function clean(target) {
   return { ...rest, fpId }
 }
 
-export function buildFile() {
+// ids: only these changes (the ones checked in the Changes tab), else all.
+export function buildFile(ids = null) {
+  const pick = ids ? getChanges().filter((c) => ids.includes(c.id)) : getChanges()
+  const notes = getNotes().trim()
   return {
     version: 1,
     tool: 'fairy-polish',
@@ -29,7 +32,8 @@ export function buildFile() {
       themeMode: state.themeMode,
       breakpoints: state.breakpoints,
     },
-    changes: getChanges().map((c) => {
+    ...(notes ? { notes } : {}),
+    changes: pick.map((c) => {
       const out = { ...c, target: clean(c.target) }
       if (c.type === 'reorder') out.to = { ...c.to, parent: clean(c.to.parent), before: clean(c.to.before) }
       return out
@@ -44,6 +48,7 @@ function sizeText(m) {
 
 export function toMarkdown(file) {
   const lines = [`# ${DISPLAY_NAME} edits`, '', `- Page: ${file.page.url}`, `- Saved: ${file.createdAt}`, `- Changes: ${file.changes.length}`, '']
+  if (file.notes) lines.push('## Notes', '', file.notes, '')
   for (const c of file.changes) {
     const t = c.target
     lines.push(`## ${c.id} · ${c.type} · ${describe(t)}`)
@@ -63,15 +68,16 @@ export function toMarkdown(file) {
     if (c.type === 'reorder') lines.push(`- Move into ${describe(c.to.parent)}${c.to.before ? `, before ${describe(c.to.before)}` : ', at the end'}`)
     if (c.type === 'freeMove') lines.push(`- Offset ${c.dx}px, ${c.dy}px at ${c.viewport.w}×${c.viewport.h}. Approximate: pick a responsive equivalent.`)
     if (c.type === 'text') lines.push(`- “${c.from}” → “${c.to}”`)
-    if (c.type === 'effect') lines.push(`- Effect: \`${c.effect}\` ${JSON.stringify(c.params || {})}`, ...(c.note ? [`- Note: ${c.note}`] : []))
+    if (c.type === 'effect') lines.push(`- Effect: \`${c.effect}\` ${JSON.stringify(c.params || {})}`)
+    if (c.note) lines.push(`- Note: ${c.note}`)
     if (c.type === 'name') lines.push(`- Name: ${c.name}`)
     lines.push('')
   }
   return lines.join('\n')
 }
 
-export async function saveChanges() {
-  const file = buildFile()
+export async function saveChanges(ids = null) {
+  const file = buildFile(ids)
   try {
     const res = await fetch(`${base}/save`, {
       method: 'POST',
@@ -80,17 +86,17 @@ export async function saveChanges() {
     })
     if (!res.ok) throw new Error(res.status)
     const { path, name } = await res.json()
-    markSaved(name)
-    toast(`Saved ${path}`)
+    markSaved(name, file.changes.map((c) => c.id))
+    toast(`Saved ${file.changes.length} change${file.changes.length === 1 ? '' : 's'} to ${path}`)
   } catch {
-    await copyChanges()
+    await copyChanges(ids)
     toast('No dev server endpoint. Copied the change file to the clipboard instead.')
   }
 }
 
-export async function copyChanges() {
+export async function copyChanges(ids = null) {
   try {
-    await navigator.clipboard.writeText(JSON.stringify(buildFile(), null, 2))
+    await navigator.clipboard.writeText(JSON.stringify(buildFile(ids), null, 2))
     toast('Copied the change file to the clipboard')
   } catch {
     toast('Clipboard blocked by the browser')

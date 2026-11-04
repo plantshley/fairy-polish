@@ -2,8 +2,8 @@
 // scoped by the current size, theme, scope, and part settings, and mirror
 // color edits into the other theme.
 
-import { commit, upsertStyle, findStyle, nextId, getChanges } from './store.js'
-import { fpId, locatorFor } from './locate.js'
+import { commit, upsertStyle, findStyle, nextId, getChanges, targetKey } from './store.js'
+import { fpId, locatorFor, baseSelector } from './locate.js'
 import { state } from './state.js'
 import { view, viewportSize } from './view.js'
 import { mediaFor, bands } from './media.js'
@@ -114,6 +114,21 @@ function shippedInTheme(el, prop, theme, pseudo) {
   })
 }
 
+// Another scope's edit (an "all .x" or "every copy" rule) also sets prop on
+// this element. Setting it back to the shipped value then has to stay as an
+// override instead of being dropped as a no-op.
+function shadowed(el, target, prop) {
+  const same = (a, b) => (a.part || null) === (b.part || null) && (a.pseudo || null) === (b.pseudo || null) && (a.state || null) === (b.state || null)
+  return getChanges().some((c) => {
+    if (c.type !== 'style' || !c.props[prop] || targetKey(c.target) === targetKey(target) || !same(c.target, target)) return false
+    try {
+      return el.matches(baseSelector(c.target))
+    } catch {
+      return false
+    }
+  })
+}
+
 // opts: { mergeKey, token, from, fontUrl, target, media, themed, pseudo, state, part }
 export function setStyle(el, prop, value, opts = {}) {
   const target = opts.target || targetFor(el, state.scope, opts)
@@ -133,8 +148,9 @@ export function setStyle(el, prop, value, opts = {}) {
     const m = mirror({ shippedFrom: from, shippedTo, editedFrom: toColor })
     if (m) mirrorPlan = { other, shippedTo, value: m }
   }
+  const keep = shadowed(el, target, prop)
   commit((changes) => {
-    const c = upsertStyle(changes, target, media, theme, prop, { from, to, toToken: tok && !opts.token ? tok : opts.token, fontUrl: opts.fontUrl })
+    const c = upsertStyle(changes, target, media, theme, prop, { from, to, toToken: tok && !opts.token ? tok : opts.token, fontUrl: opts.fontUrl, keep })
     if (!mirrorPlan) return
     const partner = findStyle(changes, target, media, mirrorPlan.other)
     const existing = partner?.props[prop]

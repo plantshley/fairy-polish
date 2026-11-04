@@ -1,0 +1,4 @@
+[data-fp-pixel-stars] { position: absolute; left: 0; top: 0; background: transparent; animation: fp-pixel-stars linear infinite; }
+[data-fp-pixel-stars]::after { content: ""; position: absolute; width: inherit; height: inherit; box-shadow: inherit; left: calc(-1 * var(--tx)); top: calc(-1 * var(--ty)); }
+@keyframes fp-pixel-stars { to { transform: translate(var(--tx), var(--ty)); } }
+@media (prefers-reduced-motion: reduce) { [data-fp-pixel-stars] { animation: none !important; } }
