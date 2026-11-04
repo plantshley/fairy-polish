@@ -21,7 +21,7 @@ import { fontDropdown } from './fonts.js'
 import { view } from './view.js'
 import { renderGallery, renderAttached, stopThumbs } from './gallery.js'
 import { renderTheme } from './themetab.js'
-import { saveChanges, copyChanges } from './export.js'
+import { saveChanges } from './export.js'
 import { select, startTextEdit } from './select.js'
 import { hasOwnText, trappingAncestors, withPreviewOff } from './preview.js'
 import { findExisting, nth, withNth } from './existing.js'
@@ -291,7 +291,6 @@ function renderChrome() {
     h('button', { class: 'fp-btn', title: 'Redo (Ctrl+Shift+Z)', disabled: canRedo() ? null : true, onClick: redo }, '↷'),
     h('span', { class: 'grow' }),
     h('button', { class: 'fp-btn', disabled: n ? null : true, onClick: () => confirmClear() }, 'Clear'),
-    h('button', { class: 'fp-btn', disabled: n ? null : true, title: picked ? 'Copy the checked changes to the clipboard' : 'Copy the change file to the clipboard', onClick: () => copyChanges(pickedIds()) }, picked ? `Copy ${picked}` : 'Copy'),
     h('button', { class: 'fp-btn primary', disabled: n ? null : true, title: picked ? 'Write only the checked changes into the project. The rest stay here.' : 'Write every change into the project', onClick: () => saveChanges(pickedIds()) }, picked ? `Save ${picked}` : 'Save'),
   )
 }
@@ -872,7 +871,7 @@ function renderChanges() {
   notes.addEventListener('input', () => setNotes(notes.value))
   const list = h('div', { class: 'fp-changes' },
     notes,
-    h('div', { class: 'fp-help' }, checked.size ? 'Save and Copy take only the checked changes. The rest stay here.' : 'Save writes every change. Check some to save only those.'),
+    h('div', { class: 'fp-help' }, checked.size ? 'Save takes only the checked changes. The rest stay here.' : 'Save writes every change. Check some to save only those.'),
     h('div', { class: 'fp-selbar' },
       box(changes.map((c) => c.id)),
       h('span', { class: 'fp-kbd' }, 'group by'),
@@ -896,19 +895,16 @@ function renderChanges() {
         renderBody()
         renderChrome()
       })
-      // Effects edit their note in the Effects section; here it is shown.
-      const own = c.type !== 'effect'
-      const noteBox = own && (c.note || noteOpen.has(c.id)) ? changeNote(c) : null
+      const noteBox = c.note || noteOpen.has(c.id) ? changeNote(c) : null
       put(list,
         h('div', { class: 'fp-change' },
           cb,
           h('div', {},
             h('div', { class: 'what' }, s.what),
             h('div', { class: 'det', style: { whiteSpace: 'pre-wrap' } }, s.det),
-            !own && c.note ? h('div', { class: 'det' }, 'Note: ' + c.note) : null,
             noteBox),
-          h('div', { style: { display: 'flex', alignItems: 'flex-start' } },
-            own && !noteBox ? h('button', { class: 'fp-icon', title: 'Add a note for the agent about this change', onClick: () => { noteOpen.add(c.id); renderBody() } }, '✎') : null,
+          h('div', { class: 'fp-change-acts' },
+            noteBox ? null : h('button', { class: 'fp-icon fp-pen', title: 'Add a note for the agent about this change', onClick: () => { noteOpen.add(c.id); renderBody() } }, '✎'),
             h('button', { class: 'fp-icon', title: 'Discard this change', onClick: () => removeChanges([c.id]) }, '✕'))),
       )
     }

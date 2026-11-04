@@ -105,6 +105,14 @@ button, input, select, textarea { font-size: 10px; }
 .fp-sec > summary::before { content: '▸'; font-size: 8px; }
 .fp-sec[open] > summary::before { content: '▾'; }
 .fp-sec > div { display: grid; gap: 4px; padding-top: 6px; }
+.fp-fx { background: var(--fp-raised); border-radius: 3px; padding: 3px 5px; }
+.fp-fx > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 4px; }
+.fp-fx > summary::-webkit-details-marker { display: none; }
+.fp-fx > summary::before { content: '▸'; font-size: 8px; color: var(--fp-muted); }
+.fp-fx[open] > summary::before { content: '▾'; }
+.fp-fx > div { display: grid; gap: 4px; padding: 4px 0 2px; }
+.fp-change-acts { display: flex; align-items: flex-start; }
+.fp-pen { font-size: 12px; line-height: 1; color: var(--fp-ink); }
 
 .fp-field { display: grid; grid-template-columns: 74px 1fr; align-items: center; gap: 6px; }
 .fp-field > label { font-size: 9px; color: var(--fp-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;

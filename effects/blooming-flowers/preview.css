@@ -1,7 +1,9 @@
-/* Adapted from SDSHC-games-hub's Year in Bloom flower (games.css .yib-fl),
+/* The flower is 70cqmin of stem plus about 11cqmin of head, times --s. Its
+   bottom drops below the container so only --tall percent shows.
+   Adapted from SDSHC-games-hub's Year in Bloom flower (games.css .yib-fl),
    itself from theArtsy07's CodePen. vmin became cqmin; every duration is
    scaled by --fp-bloom-speed and every delay is offset by the flower's --d. */
-[data-fp-bloom] { --t: var(--fp-bloom-speed, 1); position: absolute; bottom: 0; transform-origin: bottom center; transform: translateX(-50%) scale(var(--s)); animation: fp-bl-sway calc(var(--sway) * var(--t)) linear infinite; }
+[data-fp-bloom] { --t: var(--fp-bloom-speed, 1); position: absolute; bottom: min(0px, calc(var(--tall) * 1cqh - 81cqmin * var(--s))); transform-origin: bottom center; transform: translateX(-50%) scale(var(--s)); animation: fp-bl-sway calc(var(--sway) * var(--t)) linear infinite; }
 [data-fp-bloom] i { display: block; font-style: normal; }
 [data-fp-bloom] .hd { position: relative; animation: fp-bl-bloom calc(2s * var(--t)) calc(var(--d) + 1.1s * var(--t)) backwards; }
 [data-fp-bloom] .hd::after { content: ""; position: absolute; left: 0; top: 0; transform: translate(-50%, -100%); width: 8cqmin; height: 8cqmin; background-color: var(--fl-l); filter: blur(10cqmin); }
@@ -32,17 +34,6 @@
 [data-fp-bloom] .lf4 { left: -460%; top: 40%; transform: rotate(-70deg) rotateY(30deg); animation: fp-bl-leaf-l calc(0.8s * var(--t)) calc(var(--d) + 1s * var(--t)) backwards; }
 [data-fp-bloom] .lf5 { top: 0; transform-origin: left; transform: rotate(70deg) rotateY(30deg) scale(0.6); animation: fp-bl-leaf-r calc(0.8s * var(--t)) calc(var(--d) + 1.8s * var(--t)) backwards; }
 [data-fp-bloom] .lf6 { top: -2%; left: -450%; transform-origin: right; transform: rotate(-70deg) rotateY(30deg) scale(0.6); animation: fp-bl-leaf-l calc(0.8s * var(--t)) calc(var(--d) + 2s * var(--t)) backwards; }
-[data-fp-bloom] .gr { --gc: var(--fl-c); --line-w: 1.5cqmin; position: absolute; bottom: 12cqmin; left: -7cqmin; display: flex; flex-direction: column; align-items: flex-end; z-index: 20; transform-origin: bottom center; transform: rotate(-48deg) rotateY(40deg); animation: fp-bl-grass calc(2s * var(--t)) linear infinite; }
-[data-fp-bloom] .gr2 { left: 2cqmin; transform: rotate(75deg) rotateX(10deg) rotateY(-200deg); opacity: 0.9; z-index: 0; animation: fp-bl-grass-2 calc(1.5s * var(--t)) linear infinite; }
-[data-fp-bloom] .gt { width: 7cqmin; height: 10cqmin; border-top-right-radius: 100%; border-right: var(--line-w) solid var(--gc); transform-origin: bottom center; transform: rotate(-2deg); }
-[data-fp-bloom] .gb { margin-top: -2px; width: var(--line-w); height: 25cqmin; background-image: linear-gradient(to top, transparent, var(--gc)); }
-[data-fp-bloom] .gl { --size: 10cqmin; position: absolute; width: calc(var(--size) * 2.1); height: var(--size); border-top-left-radius: var(--size); border-top-right-radius: var(--size); background-image: linear-gradient(to top, transparent, transparent 30%, var(--fl-l)); z-index: 100; }
-[data-fp-bloom] .gl1 { top: -6%; left: 30%; --size: 6cqmin; transform: rotate(-20deg); animation: fp-bl-grow calc(2s * var(--t)) calc(var(--d) + 2.6s * var(--t)) backwards; }
-[data-fp-bloom] .gl2 { top: -5%; left: -110%; --size: 6cqmin; transform: rotate(10deg); animation: fp-bl-grow calc(2s * var(--t)) calc(var(--d) + 2.4s * var(--t)) backwards; }
-[data-fp-bloom] .gl3 { top: 5%; left: 60%; --size: 8cqmin; transform: rotate(-18deg) rotateX(-20deg); animation: fp-bl-grow calc(2s * var(--t)) calc(var(--d) + 2.2s * var(--t)) backwards; }
-[data-fp-bloom] .gl4 { top: 6%; left: -135%; --size: 8cqmin; transform: rotate(2deg); animation: fp-bl-grow calc(2s * var(--t)) calc(var(--d) + 2s * var(--t)) backwards; }
-[data-fp-bloom] .gl5 { top: 20%; left: 60%; --size: 10cqmin; transform: rotate(-24deg) rotateX(-20deg); animation: fp-bl-grow calc(2s * var(--t)) calc(var(--d) + 1.8s * var(--t)) backwards; }
-[data-fp-bloom] .gl6 { top: 22%; left: -180%; --size: 10cqmin; transform: rotate(10deg); animation: fp-bl-grow calc(2s * var(--t)) calc(var(--d) + 1.6s * var(--t)) backwards; }
 
 @keyframes fp-bl-sway { 0%, 100% { transform: translateX(-50%) scale(var(--s)) rotate(2deg); } 50% { transform: translateX(-50%) scale(var(--s)) rotate(-2deg); } }
 @keyframes fp-bl-bloom { 0% { transform: scale(0); } }
@@ -56,10 +47,8 @@
   75% { transform: translateY(-20cqmin) translateX(-2cqmin); filter: blur(0.2cqmin); }
   100% { transform: translateY(-30cqmin); opacity: 0; filter: blur(1cqmin); }
 }
-@keyframes fp-bl-grass { 0%, 100% { transform: rotate(-48deg) rotateY(40deg); } 50% { transform: rotate(-50deg) rotateY(40deg); } }
-@keyframes fp-bl-grass-2 { 0%, 100% { transform: rotate(75deg) rotateX(10deg) rotateY(-200deg); } 50% { transform: rotate(79deg) rotateX(10deg) rotateY(-200deg); } }
-@keyframes fp-bl-grow { 0% { transform: scale(0); } }
 
 [data-fp-still] [data-fp-bloom], [data-fp-still] [data-fp-bloom] * { animation: none !important; }
 [data-fp-still] [data-fp-bloom] .sp { display: none; }
 @media (prefers-reduced-motion: reduce) { [data-fp-bloom], [data-fp-bloom] * { animation: none !important; } [data-fp-bloom] .sp { display: none; } }
+

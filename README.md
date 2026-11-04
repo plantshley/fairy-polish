@@ -46,7 +46,7 @@ New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\skills\fairy-polish"
 
 **Effects.** The Effects tab is a gallery with live thumbnails. Hover a card to preview it on the selection, click to attach, then tune its params on the Edit tab. Palettes have a custom option with as many colors as you want. "Custom tag" records a description for anything the gallery lacks. The ⓘ button explains how to add effects and has a prompt to copy.
 
-**Changes tab.** Grouped by type (or by screen size). The notes box at the top goes into the change file for the agent, and ✎ adds a note to one change. Tick changes to discard them, or to save or copy only those: with any ticked, Save and Copy take just the ticked ones and leave the rest in the editor.
+**Changes tab.** Grouped by type (or by screen size). The notes box at the top goes into the change file for the agent, and ✎ adds a note to one change. Tick changes to discard them, or to save only those: with any ticked, Save takes just the ticked ones and leaves the rest in the editor. When the page has no dev server to save through, Save copies the change file to the clipboard instead.
 
 Edits persist in localStorage per site until you clear them, or until the agent applies the saved file.
 

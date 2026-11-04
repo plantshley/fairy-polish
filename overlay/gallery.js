@@ -143,10 +143,9 @@ export function renderAttached(el) {
   const ownText = hasOwnText(el)
   for (const c of mine) {
     const meta = c.effect === 'custom' ? null : effectMeta(c.effect)
+    const remove = h('button', { class: 'fp-icon', title: 'Remove', onClick: (e) => { e.preventDefault(); removeChange(c.id) } }, '✕')
+    const head = h('summary', {}, h('b', { style: { flex: '1' } }, c.effect === 'custom' ? 'Custom tag' : meta?.name || c.effect), remove)
     const rows = [
-      h('div', { class: 'fp-row' },
-        h('b', { style: { flex: '1' } }, c.effect === 'custom' ? 'Custom tag' : meta?.name || c.effect),
-        h('button', { class: 'fp-icon', title: 'Remove', onClick: () => removeChange(c.id) }, '✕')),
       h('div', { class: 'fp-field' }, h('label', {}, 'apply to'),
         segmented(c.target.part === 'text' ? 'text' : 'element', [
           { value: 'element', label: 'element' },
@@ -159,7 +158,10 @@ export function renderAttached(el) {
     note.addEventListener('keydown', (e) => e.stopPropagation())
     note.addEventListener('change', () => updateEffect(c.id, { note: note.value }))
     rows.push(note)
-    wrap.append(h('div', { style: { display: 'grid', gap: '4px', padding: '5px', background: 'var(--fp-raised)', borderRadius: '3px' } }, rows))
+    // Each effect folds on its own; the choice is remembered per change.
+    const d = h('details', { class: 'fp-fx', open: state.sections['fx:' + c.id] === false ? null : true }, head, h('div', {}, rows))
+    d.addEventListener('toggle', () => (state.sections['fx:' + c.id] = d.open))
+    wrap.append(d)
   }
   wrap.append(h('button', {
     class: 'fp-btn',

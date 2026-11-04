@@ -5,7 +5,8 @@ import { rng } from '../_lib/rand.js'
 // Flowers that grow from the bottom of the container: the stem rises, leaves
 // unfold, the head blooms, then it sways while sparkles drift up. Sizes are in
 // cqmin (the layer is a size container), so they follow the container rather
-// than the window. Colors come from three shades of one color per flower.
+// than the window. A flower taller than --tall percent of the container sinks
+// below its bottom edge, so the stem is cropped instead of squished. Colors come from three shades of one color per flower.
 export default function apply(el, params) {
   return tidy(el, () => run(el, params))
 }
@@ -26,8 +27,9 @@ function run(el, params) {
     const f = doc.createElement('div')
     f.setAttribute('data-fp-bloom', '')
     const x = ((i + 1) / (n + 1)) * 100 + (rnd() * 2 - 1) * chaos * (40 / n)
-    const s = (params.size ?? 0.7) * (1 + (rnd() * 2 - 1) * chaos * 0.4)
-    f.style.cssText = `left:${x.toFixed(2)}%;--s:${s.toFixed(3)};--fl-c:${c};--fl-d:${shade(c, 0.5)};--fl-l:${shade(c, 1.4)};--d:${(rnd() * chaos * 1.5).toFixed(2)}s;--sway:${(3.5 + rnd() * chaos * 2).toFixed(2)}s;`
+    const s = (params.size ?? 1) * (1 + (rnd() * 2 - 1) * chaos * 0.4)
+    const tall = (params.height ?? 60) * (1 + (rnd() * 2 - 1) * chaos * 0.3)
+    f.style.cssText = `left:${x.toFixed(2)}%;--s:${s.toFixed(3)};--tall:${Math.min(100, tall).toFixed(1)};--fl-c:${c};--fl-d:${shade(c, 0.5)};--fl-l:${shade(c, 1.4)};--d:${(rnd() * chaos * 1.5).toFixed(2)}s;--sway:${(3.5 + rnd() * chaos * 2).toFixed(2)}s;`
     f.innerHTML = flower(params)
     l.append(f)
   }
@@ -38,17 +40,11 @@ function run(el, params) {
 function flower(params) {
   const sparks = params.sparkles === false ? '' : Array.from({ length: 8 }, (_, i) => `<i class="sp sp${i + 1}"></i>`).join('')
   const glow = params.glow === false ? ' noglow' : ''
-  const grass = params.grass === false ? '' : `
-    <div class="gr gr1"><i class="gt"></i><i class="gb"></i>${leaves(6)}</div>
-    <div class="gr gr2"><i class="gt"></i><i class="gb"></i>${leaves(4)}</div>`
   return `
     <div class="hd${glow}"><i class="pt pt1"></i><i class="pt pt2"></i><i class="pt pt3"></i><i class="pt pt4"></i><i class="ct"></i>${sparks}</div>
-    <div class="st">${Array.from({ length: 6 }, (_, i) => `<i class="lf lf${i + 1}"></i>`).join('')}</div>${grass}`
+    <div class="st">${Array.from({ length: 6 }, (_, i) => `<i class="lf lf${i + 1}"></i>`).join('')}</div>`
 }
 
-function leaves(k) {
-  return Array.from({ length: k }, (_, i) => `<i class="gl gl${i + 1}"></i>`).join('')
-}
 
 // Palette entries may be any CSS color; flowers need a hex to shade.
 function toHex(c) {
