@@ -112,6 +112,11 @@ button, input, select, textarea { font-size: 10px; }
 .fp-fx[open] > summary::before { content: '▾'; }
 .fp-fx > div { display: grid; gap: 4px; padding: 4px 0 2px; }
 .fp-change-acts { display: flex; align-items: flex-start; }
+.fp-reset { border: 0; background: none; padding: 0 2px; font: inherit; font-size: 8px; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--fp-accent); cursor: pointer; }
+.fp-reset:hover { text-decoration: underline; }
+.fp-sec > summary { display: flex; align-items: center; gap: 4px; }
+.fp-group-head { cursor: pointer; user-select: none; flex: 1; }
+.fp-change.hidden > div:nth-child(2) { opacity: 0.45; }
 .fp-pen { font-size: 12px; line-height: 1; color: var(--fp-ink); }
 
 .fp-field { display: grid; grid-template-columns: 74px 1fr; align-items: center; gap: 6px; }

@@ -32,7 +32,7 @@ New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\skills\fairy-polish"
 | Undo / redo | Ctrl+Z / Ctrl+Shift+Z (or the footer buttons). |
 | Deselect / close | Esc / Alt+Shift+E. |
 
-**Screen sizes.** "Edits for" picks which sizes new edits apply to: all sizes, or one of the site's own size ranges (named mobile, tablet, desktop, and so on, from its breakpoints; 640 and 1024 when it has none), plus an optional orientation. Picking a range also shows the page at a size inside it, in a frame, so the site's real media queries run. "Viewing" sets any other size to look at.
+**Screen sizes.** "Edits for" picks which sizes new edits apply to: all sizes, or one of the site's own size ranges (named mobile, tablet, desktop, and so on, from its breakpoints; 640 and 1024 when it has none), plus an optional orientation. Picking a range also shows the page at a size inside it, in a frame, so the site's real media queries run. "Full screen" uses this monitor's full-screen size (a kiosk or a presentation): edits go to the range its width falls in, and the page is shown at exactly that size, scaled to fit. "Viewing" sets any other size to look at.
 
 **Applies to.** Just this element, every copy of it (everything rendered by the same line of code, such as each card in a list), or every element with its classes. Both broader options apply on every page. Every copy shows how many are on this page; the class option also shows how many places in the project's source use those classes. When scopes overlap, the narrower one wins: a "just this element" edit beats "every copy", which beats a class-wide edit.
 
@@ -46,7 +46,9 @@ New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\skills\fairy-polish"
 
 **Effects.** The Effects tab is a gallery with live thumbnails. Hover a card to preview it on the selection, click to attach, then tune its params on the Edit tab. Palettes have a custom option with as many colors as you want. "Custom tag" records a description for anything the gallery lacks. The ⓘ button explains how to add effects and has a prompt to copy.
 
-**Changes tab.** Grouped by type (or by screen size). The notes box at the top goes into the change file for the agent, and ✎ adds a note to one change. Tick changes to discard them, or to save only those: with any ticked, Save takes just the ticked ones and leaves the rest in the editor. When the page has no dev server to save through, Save copies the change file to the clipboard instead.
+**Changes tab.** Grouped by type (or by screen size); click a group's name to fold it. The notes box at the top goes into the change file for the agent, and ✎ adds a note to one change. Tick changes to discard them, to hide them (they leave the page and the saved file but stay in the list, so you can compare), or to save only those: with any ticked, Save takes just the ticked ones and leaves the rest in the editor. When the page has no dev server to save through, Save copies the change file to the clipboard instead.
+
+**Reset.** An Edit section with edits for the selected element shows **reset**, which undoes that section's edits at the current size and scope. An attached effect shows **reset** once its settings differ from the defaults.
 
 Edits persist in localStorage per site until you clear them, or until the agent applies the saved file.
 

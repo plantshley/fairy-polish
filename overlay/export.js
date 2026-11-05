@@ -19,7 +19,7 @@ function clean(target) {
 
 // ids: only these changes (the ones checked in the Changes tab), else all.
 export function buildFile(ids = null) {
-  const pick = ids ? getChanges().filter((c) => ids.includes(c.id)) : getChanges()
+  const pick = getChanges().filter((c) => !c.hidden && (!ids || ids.includes(c.id)))
   const notes = getNotes().trim()
   return {
     version: 1,

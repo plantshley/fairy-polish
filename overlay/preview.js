@@ -8,7 +8,7 @@
 // Structural previews (reorders, text) touch the DOM, so they are reverted
 // and replayed in order only when the structural part of the set changes.
 
-import { getChanges, patchSilent } from './store.js'
+import { getChanges as allChanges, patchSilent } from './store.js'
 import { resolve, previewSelector, baseSelector } from './locate.js'
 import { normalizeColor } from './tokens.js'
 import { themeWrap, currentTheme } from './theme.js'
@@ -17,6 +17,9 @@ import { state } from './state.js'
 import { loadEffect } from './effects.js'
 
 const STYLE_ID = 'fp-preview'
+
+// Hidden changes (Changes tab) are left out of the preview.
+const getChanges = () => allChanges().filter((c) => !c.hidden)
 
 export function resolveAll(doc) {
   for (const c of getChanges()) {

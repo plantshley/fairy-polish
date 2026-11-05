@@ -93,6 +93,20 @@ export function nextId() {
   return 'c' + data.seq
 }
 
+// Hidden changes stay in the list but leave the preview and the saved file,
+// so you can compare with and without them. Mirrored values follow the edit
+// that produced them.
+export function setHidden(ids, hidden) {
+  const set = new Set(ids)
+  commit((changes) => {
+    for (const c of changes) {
+      if (!set.has(c.id) && !set.has(c.mirrorOf)) continue
+      if (hidden) c.hidden = true
+      else delete c.hidden
+    }
+  })
+}
+
 // Notes for the agent about the whole change file.
 export function getNotes() {
   return data.notes || ''

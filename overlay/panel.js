@@ -5,7 +5,8 @@
 
 import { h, clear, put, DISPLAY_NAME } from './dom.js'
 import { state, savePrefs, uiChanged, onUi } from './state.js'
-import { getChanges, subscribe, undo, redo, canUndo, canRedo, clearAll, removeChanges, getNotes, setNotes, setChangeNote } from './store.js'
+import { sectionReset } from './edit.js'
+import { getChanges, subscribe, undo, redo, canUndo, canRedo, clearAll, removeChanges, getNotes, setNotes, setChangeNote, setHidden } from './store.js'
 import {
   lengthField, selectField, textField, colorField, quadField, textInput, dropdown, segmented, combo, field,
   gradientEditor, closeMenu, colorChips,
@@ -168,6 +169,20 @@ function setBand(i) {
   uiChanged('size')
 }
 
+// This monitor at full screen (a kiosk, a presentation): edits go to the
+// size range its width falls in, and the page is shown at exactly that
+// size, scaled down to fit beside the panel.
+function setFullScreen() {
+  const w = screen.width
+  const hh = screen.height
+  const i = bands(state.breakpoints).findIndex((b) => (b.lo == null || w >= b.lo) && (b.hi == null || w <= b.hi))
+  state.band = i < 0 ? null : i
+  state.orient = null
+  state.frameSize = { w, h: hh }
+  state.preset = 'fullscreen'
+  uiChanged('size')
+}
+
 function setOrient(o) {
   state.orient = o
   if (o) {
@@ -183,7 +198,8 @@ function renderBar() {
   const { w, h: hh } = currentSize()
   const list = bands(state.breakpoints)
   const range = (b) => (b.lo == null ? `≤${b.hi}px` : b.hi == null ? `≥${b.lo}px` : `${b.lo}–${b.hi}px`)
-  const sizeItems = [{ value: null, label: 'all sizes' }, ...list.map((b, i) => ({ value: i, label: b.name, hint: range(b) }))]
+  const sizeItems = [{ value: null, label: 'all sizes' }, ...list.map((b, i) => ({ value: i, label: b.name, hint: range(b) })),
+    { value: 'full', label: 'full screen', hint: `${screen.width}×${screen.height}` }]
   const band = currentBand()
   const outside = band && ((band.lo != null && w < band.lo) || (band.hi != null && w > band.hi))
   const wrongOrient = state.orient && state.orient !== (w > hh ? 'landscape' : 'portrait')
@@ -192,7 +208,7 @@ function renderBar() {
   put(bar,
     h('div', { class: 'fp-row', style: { flexWrap: 'nowrap' } },
       h('span', { class: 'fp-kbd', title: 'Which screen sizes new edits apply to. The ranges come from the site’s own breakpoints.' }, 'edits for'),
-      h('div', { class: 'grow' }, dropdown(state.band, sizeItems, setBand, { title: 'Screen sizes new edits apply to' })),
+      h('div', { class: 'grow' }, dropdown(state.preset === 'fullscreen' ? 'full' : state.band, sizeItems, (v) => (v === 'full' ? setFullScreen() : setBand(v)), { title: 'Screen sizes new edits apply to' })),
       dropdown(state.orient, [{ value: null, label: 'any orientation' }, { value: 'portrait', label: 'portrait' }, { value: 'landscape', label: 'landscape' }], setOrient, { cls: 'sm' }),
     ),
     h('div', { class: 'fp-row', style: { flexWrap: 'nowrap' } },
@@ -326,9 +342,13 @@ function renderBody() {
 const SECTIONS = ['Name', 'Existing effects', 'Layout', 'Size', 'Spacing', 'Type', 'Fill', 'Border', 'Shadow & filter', 'Effects', 'Text']
 
 // A collapsible section that remembers whether you left it open.
+// A section with edits for the selected element gets a reset (sectionReset).
 function sec(title, def, ...children) {
   const open = state.sections[title] ?? def
-  const d = h('details', { class: 'fp-sec', open: open ? true : null }, h('summary', {}, title), h('div', {}, ...children))
+  const reset = state.selected ? sectionReset(state.selected, title) : null
+  const head = h('summary', {}, h('span', { class: 'grow' }, title),
+    reset ? h('button', { class: 'fp-reset', title: `Undo this element’s ${title.toLowerCase()} edits at this size and scope`, onClick: (e) => { e.preventDefault(); reset() } }, 'reset') : null)
+  const d = h('details', { class: 'fp-sec', open: open ? true : null }, head, h('div', {}, ...children))
   d.addEventListener('toggle', () => {
     state.sections[title] = d.open
     savePrefs()
@@ -834,6 +854,20 @@ function changeNote(c) {
     noteOpen.delete(c.id)
     setChangeNote(c.id, ta.value.trim())
   })
+  // Opened but left empty: fold back to the pen on blur, or on any click
+  // elsewhere (in case it never got focus).
+  const docs = [document, view.doc].filter((d, i, a) => d && a.indexOf(d) === i)
+  const fold = () => {
+    docs.forEach((d) => d.removeEventListener('pointerdown', away, true))
+    if (!ta.isConnected || ta.value.trim() || c.note) return
+    noteOpen.delete(c.id)
+    renderBody()
+  }
+  const away = (e) => {
+    if (!e.composedPath().includes(ta)) fold()
+  }
+  docs.forEach((d) => d.addEventListener('pointerdown', away, true))
+  ta.addEventListener('blur', fold)
   if (!c.note) queueMicrotask(() => ta.focus())
   return ta
 }
@@ -869,14 +903,22 @@ function renderChanges() {
   notes.value = getNotes()
   notes.addEventListener('keydown', (e) => e.stopPropagation())
   notes.addEventListener('input', () => setNotes(notes.value))
+  const sel = changes.filter((c) => checked.has(c.id))
+  const anyShown = sel.some((c) => !c.hidden)
   const list = h('div', { class: 'fp-changes' },
     notes,
-    h('div', { class: 'fp-help' }, checked.size ? 'Save takes only the checked changes. The rest stay here.' : 'Save writes every change. Check some to save only those.'),
+    h('div', { class: 'fp-help' }, (checked.size ? 'Save takes only the checked changes. The rest stay here.' : 'Save writes every change. Check some to save only those.') + (changes.some((c) => c.hidden) ? ' Hidden changes stay off the page and out of the saved file.' : '')),
     h('div', { class: 'fp-selbar' },
       box(changes.map((c) => c.id)),
       h('span', { class: 'fp-kbd' }, 'group by'),
       segmented(state.changesBy, ['type', 'size'], (v) => { state.changesBy = v; savePrefs(); renderBody() }),
       h('span', { class: 'grow' }),
+      h('button', {
+        class: 'fp-btn',
+        disabled: sel.length ? null : true,
+        title: anyShown || !sel.length ? 'Take the checked changes off the page without discarding them' : 'Put the checked changes back on the page',
+        onClick: () => setHidden(sel.map((c) => c.id), anyShown),
+      }, `${anyShown || !sel.length ? 'Hide' : 'Show'}${sel.length ? ' ' + sel.length : ''}`),
       h('button', {
         class: 'fp-btn',
         disabled: checked.size ? null : true,
@@ -886,7 +928,17 @@ function renderChanges() {
         },
       }, `Discard${checked.size ? ' ' + checked.size : ''}`)))
   for (const [key, items] of ordered) {
-    list.append(h('div', { class: 'fp-group' }, box(items.map((c) => c.id)), `${key} (${items.length})`))
+    const gk = 'chg:' + key
+    const folded = state.sections[gk] === false
+    const toggle = () => {
+      state.sections[gk] = folded
+      savePrefs()
+      renderBody()
+    }
+    const hiddenN = items.filter((c) => c.hidden).length
+    list.append(h('div', { class: 'fp-group' }, box(items.map((c) => c.id)),
+      h('span', { class: 'fp-group-head', onClick: toggle, title: folded ? 'Expand' : 'Collapse' }, `${folded ? '▸' : '▾'} ${key} (${items.length}${hiddenN ? `, ${hiddenN} hidden` : ''})`)))
+    if (folded) continue
     for (const c of items) {
       const s = summarize(c)
       const cb = h('input', { type: 'checkbox', checked: checked.has(c.id) })
@@ -897,10 +949,10 @@ function renderChanges() {
       })
       const noteBox = c.note || noteOpen.has(c.id) ? changeNote(c) : null
       put(list,
-        h('div', { class: 'fp-change' },
+        h('div', { class: 'fp-change' + (c.hidden ? ' hidden' : '') },
           cb,
           h('div', {},
-            h('div', { class: 'what' }, s.what),
+            h('div', { class: 'what' }, s.what, c.hidden ? h('span', { class: 'fp-kbd' }, ' · hidden') : null),
             h('div', { class: 'det', style: { whiteSpace: 'pre-wrap' } }, s.det),
             noteBox),
           h('div', { class: 'fp-change-acts' },

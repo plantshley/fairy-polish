@@ -144,7 +144,10 @@ export function renderAttached(el) {
   for (const c of mine) {
     const meta = c.effect === 'custom' ? null : effectMeta(c.effect)
     const remove = h('button', { class: 'fp-icon', title: 'Remove', onClick: (e) => { e.preventDefault(); removeChange(c.id) } }, '✕')
-    const head = h('summary', {}, h('b', { style: { flex: '1' } }, c.effect === 'custom' ? 'Custom tag' : meta?.name || c.effect), remove)
+    const defaults = defaultsFor(meta)
+    const changed = meta && JSON.stringify({ ...defaults, ...(c.params || {}) }) !== JSON.stringify(defaults)
+    const reset = changed ? h('button', { class: 'fp-reset', title: 'Back to this effect’s default settings', onClick: (e) => { e.preventDefault(); updateEffect(c.id, { params: { ...defaults } }) } }, 'reset') : null
+    const head = h('summary', {}, h('b', { style: { flex: '1' } }, c.effect === 'custom' ? 'Custom tag' : meta?.name || c.effect), reset, remove)
     const rows = [
       h('div', { class: 'fp-field' }, h('label', {}, 'apply to'),
         segmented(c.target.part === 'text' ? 'text' : 'element', [

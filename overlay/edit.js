@@ -2,7 +2,7 @@
 // scoped by the current size, theme, scope, and part settings, and mirror
 // color edits into the other theme.
 
-import { commit, upsertStyle, findStyle, nextId, getChanges, targetKey } from './store.js'
+import { commit, upsertStyle, findStyle, nextId, getChanges, targetKey, removeChanges } from './store.js'
 import { fpId, locatorFor, baseSelector } from './locate.js'
 import { state } from './state.js'
 import { view, viewportSize } from './view.js'
@@ -174,6 +174,66 @@ export function valueFor(el, prop, opts = {}) {
   if (v) return { value: v.to, overridden: true, token: v.toToken, mirrored: v.mirrored }
   const value = withNode(el, target, (node) => node.ownerDocument.defaultView.getComputedStyle(node, target.pseudo || null).getPropertyValue(prop).trim())
   return { value, overridden: false }
+}
+
+/* ── section resets ─────────────────────────────────────────────────────── */
+
+const isTextClip = (c) => !!c.props['-webkit-text-fill-color'] || c.props['background-clip']?.to === 'text' || c.props['-webkit-background-clip']?.to === 'text'
+const isBorderGrad = (c) => /padding-box/.test(c.props['background-clip']?.to || '')
+const IN = (list) => (p) => list.includes(p)
+
+// Which properties each Edit section owns: (prop, change) => boolean.
+const SECTION_PROPS = {
+  Layout: IN(['display', 'flex-direction', 'justify-content', 'align-items', 'flex-wrap', 'gap', 'row-gap', 'column-gap', 'grid-template-columns', 'grid-template-rows', 'align-self', 'position', 'z-index', 'isolation', 'top', 'left', 'right', 'bottom']),
+  Size: (p) => /^(min-|max-)?(width|height)$/.test(p),
+  Spacing: (p) => /^(margin|padding)/.test(p),
+  Type: (p, c) => /^(font-|line-height|letter-spacing|color$|text-align|text-transform|text-decoration|-webkit-text-fill-color)/.test(p) || (isTextClip(c) && /^(-webkit-)?background-(image|clip)$/.test(p)),
+  Fill: (p, c) => p === 'background-color' || p === 'opacity' || (p === 'background-image' && !isTextClip(c) && !isBorderGrad(c)),
+  Border: (p, c) => /^border/.test(p) || (isBorderGrad(c) && /^background-(image|clip|origin)$/.test(p)),
+  'Shadow & filter': IN(['box-shadow', 'text-shadow', 'filter']),
+}
+
+// A reset for one Edit section on el: undoes what that section shows, for
+// the current scope and screen size (both themes). null when there is
+// nothing to reset.
+export function sectionReset(el, section) {
+  const fp = el.dataset.fpId
+  if (section === 'Name') return getChanges().some((c) => c.type === 'name' && c.target.fpId === fp) ? () => setName(el, '') : null
+  if (section === 'Text' || section === 'Effects') {
+    const type = section === 'Text' ? 'text' : 'effect'
+    const ids = getChanges().filter((c) => c.type === type && c.target.fpId === fp).map((c) => c.id)
+    return ids.length ? () => removeChanges(ids) : null
+  }
+  const t = targetFor(el)
+  const q = currentMedia().query || null
+  const key = targetKey(t)
+  const sameBucket = (c) => c.type === 'style' && targetKey(c.target) === key && (c.target.media?.query || null) === q
+  let hit
+  let match
+  if (section === 'Existing effects') {
+    // The element's animation and transition properties, color variables,
+    // hover state, and ::before/::after, plus @keyframes recolored on it.
+    hit = (c) => (c.type === 'keyframes' && c.target.fpId === fp) || sameBucket(c)
+    match = (p, c) => !!c.target.pseudo || !!c.target.state || /^(animation|transition|--)/.test(p)
+  } else {
+    match = SECTION_PROPS[section]
+    if (!match) return null
+    hit = (c) => sameBucket(c) && (c.target.part || null) === (t.part || null) && !c.target.pseudo && !c.target.state
+  }
+  const touches = (c) => c.type === 'keyframes' || Object.keys(c.props).some((p) => match(p, c))
+  if (!getChanges().some((c) => hit(c) && touches(c))) return null
+  return () => commit((changes) => {
+    for (let i = changes.length - 1; i >= 0; i--) {
+      const c = changes[i]
+      if (!hit(c)) continue
+      if (c.type === 'keyframes') {
+        changes.splice(i, 1)
+        continue
+      }
+      for (const p of Object.keys(c.props)) if (match(p, c)) delete c.props[p]
+      if (!Object.keys(c.props).length) changes.splice(i, 1)
+    }
+  })
 }
 
 /* ── site-wide (Theme tab) ──────────────────────────────────────────────── */
