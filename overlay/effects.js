@@ -52,8 +52,30 @@ export function injectCss(root, id, text) {
 export async function loadEffect(id, roots) {
   const text = await loadCss(id)
   for (const r of roots) injectCss(r, id, text)
-  if (!modules.has(id)) modules.set(id, import(/* @vite-ignore */ `${base}/effects/${id}/preview.js`).then((m) => m.default))
+  if (!modules.has(id)) modules.set(id, import(/* @vite-ignore */ `${base}/effects/${id}/preview.js`).then((m) => withOpacity(id, m.default)))
   return modules.get(id)
+}
+
+// Effects with "layerOpacity": true get the shared Opacity param: the
+// loader sets --fp-fx-opacity-<id> on the element and util.layer() reads it.
+function withOpacity(id, apply) {
+  return (el, params) => {
+    const meta = effectMeta(id)
+    if (!meta?.layerOpacity || params?.opacity == null || params.opacity >= 1) return apply(el, params)
+    const name = '--fp-fx-opacity-' + id
+    const hadStyle = el.hasAttribute('style')
+    const prev = el.style.getPropertyValue(name)
+    el.style.setProperty(name, String(params.opacity))
+    const cleanup = apply(el, params)
+    return () => {
+      try {
+        cleanup?.()
+      } finally {
+        prev ? el.style.setProperty(name, prev) : el.style.removeProperty(name)
+        if (!hadStyle && el.getAttribute('style') === '') el.removeAttribute('style')
+      }
+    }
+  }
 }
 
 // Shared palettes for effects with a palette param (effects/_lib/palettes.js).

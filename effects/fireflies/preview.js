@@ -21,6 +21,8 @@ function run(el, params) {
   const anims = animations()
   const still = reduced(el)
   l.style.setProperty('--fp-fireflies-color', params.color || '#ffff00')
+  l.style.setProperty('--fp-fireflies-core', params.core || '#ffffff')
+  l.style.setProperty('--fp-fireflies-body', params.body || 'rgba(0, 0, 0, 0.4)')
   l.style.setProperty('--fp-fireflies-size', (params.size ?? 6) + 'px')
   for (let i = 0; i < (params.count ?? 15); i++) {
     const f = doc.createElement('i')

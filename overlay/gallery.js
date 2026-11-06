@@ -8,10 +8,11 @@ import { addEffect, updateEffect } from './edit.js'
 import { getChanges, removeChange } from './store.js'
 import { state } from './state.js'
 import { dropdown, segmented, colorList, swatch } from './controls.js'
-import { hasOwnText, wrapText } from './preview.js'
+import { hasOwnText, wrapText, runOn } from './preview.js'
 
 const CATS = ['all', 'hover', 'click', 'entrance', 'loop', 'background', 'cursor']
 let cat = 'all'
+let query = ''
 const thumbCleanups = []
 
 const TEMPLATE = `Use the fairy-polish skill to add an effect to the gallery.
@@ -44,13 +45,33 @@ export function renderGallery(body, el) {
   const cats = h('div', { class: 'fp-cats' }, CATS.map((c) =>
     h('button', { class: 'fp-btn' + (c === cat ? ' on' : ''), onClick: () => { cat = c; renderGallery(clear(body), el) } }, c)))
   const grid = h('div', { class: 'fp-grid' })
-  body.append(head, part, cats, grid)
+  const search = h('input', { class: 'fp-in', type: 'search', placeholder: 'Search effects: name, setting, or source (sparkle, color, games hub)', value: query, spellcheck: 'false' })
+  search.addEventListener('keydown', (e) => e.stopPropagation())
+  body.append(head, part, search, cats, grid)
   loadCatalog().then((list) => {
-    const shown = list.filter((e) => cat === 'all' || e.category === cat || e.alsoIn?.[cat])
-    if (!list.length) grid.append(h('div', { class: 'fp-empty', style: { gridColumn: '1 / -1' } }, 'No effects found. The gallery lives in the fairy-polish repo under effects/.'))
-    for (const meta of shown) grid.append(card(meta, el, body, { ...defaultsFor(meta), ...(cat !== meta.category && meta.alsoIn?.[cat]) }))
-    grid.append(customCard(el, body))
+    const draw = () => {
+      stopThumbs()
+      clear(grid)
+      const words = query.toLowerCase().replace(/-/g, ' ').split(/\s+/).filter(Boolean)
+      const shown = list.filter((e) => (cat === 'all' || e.category === cat || e.alsoIn?.[cat]) && words.every((w) => haystack(e).includes(w)))
+      if (!list.length) grid.append(h('div', { class: 'fp-empty', style: { gridColumn: '1 / -1' } }, 'No effects found. The gallery lives in the fairy-polish repo under effects/.'))
+      else if (!shown.length) grid.append(h('div', { class: 'fp-empty', style: { gridColumn: '1 / -1' } }, cat === 'all' ? 'No effects match.' : `No ${cat} effects match. Try "all".`))
+      for (const meta of shown) grid.append(card(meta, el, body, { ...defaultsFor(meta), ...(cat !== meta.category && meta.alsoIn?.[cat]) }))
+      grid.append(customCard(el, body))
+    }
+    search.addEventListener('input', () => {
+      query = search.value
+      draw()
+    })
+    draw()
   })
+}
+
+// What a search matches: the name, id, categories, setting names, and source.
+function haystack(e) {
+  const o = e.origin || {}
+  return [e.name, e.id, e.category, ...Object.keys(e.alsoIn || {}), ...(e.params || []).map((p) => p.label), o.repo, o.file, o.url, o.builtin ? 'built-in builtin' : '']
+    .filter(Boolean).join(' ').toLowerCase().replace(/-/g, ' ')
 }
 
 // params: the defaults, with the category's overrides when the effect is
@@ -75,12 +96,12 @@ function card(meta, el, body, params) {
     if (!hovering) return
     try {
       const unwrap = state.part === 'text' && hasOwnText(el) ? wrapText(el) : null
-      const hosts = unwrap ? [...el.querySelectorAll(':scope > [data-fp-text]')] : [el]
-      const undos = hosts.map((n) => apply(n, params))
+      const hosts = unwrap && !meta.textMask ? [...el.querySelectorAll(':scope > [data-fp-text]')] : [el]
+      const undo = runOn(el, meta.id, apply, params, !!unwrap)
       hosts.forEach((n) => demo(n, true))
       previewCleanup = () => {
         hosts.forEach((n) => demo(n, false))
-        undos.forEach(safe)
+        safe(undo)
         safe(unwrap)
       }
     } catch {}

@@ -1,0 +1,2 @@
+/* The layer and its inner box get all their styles from preview.js. */
+[data-fp-bgf] { position: absolute; inset: 0; border-radius: inherit; }

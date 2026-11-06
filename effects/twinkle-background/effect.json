@@ -3,6 +3,8 @@
   "name": "Twinkling sparkles background",
   "category": "background",
   "target": "background",
+  "textMask": true,
+  "layerOpacity": true,
   "params": [
     {
       "key": "color",
@@ -24,6 +26,15 @@
       "label": "Floating emojis",
       "type": "text",
       "default": ""
+    },
+    {
+      "key": "opacity",
+      "label": "Opacity",
+      "type": "number",
+      "default": 1,
+      "min": 0.05,
+      "max": 1,
+      "step": 0.05
     }
   ],
   "respectsReducedMotion": true,

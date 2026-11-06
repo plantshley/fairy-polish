@@ -3,17 +3,100 @@
   "name": "Neon ripple",
   "category": "click",
   "target": "element",
-  "alsoIn": { "hover": { "trigger": "hover" }, "loop": { "trigger": "loop" } },
+  "layerOpacity": true,
+  "alsoIn": {
+    "hover": {
+      "trigger": "hover"
+    },
+    "loop": {
+      "trigger": "loop"
+    }
+  },
   "params": [
-    { "key": "palette", "label": "Colors", "type": "palette", "default": "neon" },
-    { "key": "trigger", "label": "When", "type": "select", "default": "click", "options": ["click", "hover", "loop"] },
-    { "key": "rings", "label": "Rings", "type": "number", "default": 3, "min": 1, "max": 6, "step": 1 },
-    { "key": "reach", "label": "Reach", "type": "number", "default": 160, "min": 40, "max": 600, "step": 10, "unit": "px" },
-    { "key": "glow", "label": "Glow", "type": "number", "default": 12, "min": 0, "max": 40, "step": 1, "unit": "px" },
-    { "key": "width", "label": "Ring width", "type": "number", "default": 2, "min": 1, "max": 6, "step": 0.5, "unit": "px" },
-    { "key": "clip", "label": "Stay inside", "type": "boolean", "default": false },
-    { "key": "duration", "label": "Duration", "type": "number", "default": 900, "min": 300, "max": 4000, "step": 50, "unit": "ms" }
+    {
+      "key": "palette",
+      "label": "Colors",
+      "type": "palette",
+      "default": "neon"
+    },
+    {
+      "key": "trigger",
+      "label": "When",
+      "type": "select",
+      "default": "click",
+      "options": [
+        "click",
+        "hover",
+        "loop"
+      ]
+    },
+    {
+      "key": "rings",
+      "label": "Rings",
+      "type": "number",
+      "default": 3,
+      "min": 1,
+      "max": 6,
+      "step": 1
+    },
+    {
+      "key": "reach",
+      "label": "Reach",
+      "type": "number",
+      "default": 160,
+      "min": 40,
+      "max": 600,
+      "step": 10,
+      "unit": "px"
+    },
+    {
+      "key": "glow",
+      "label": "Glow",
+      "type": "number",
+      "default": 12,
+      "min": 0,
+      "max": 40,
+      "step": 1,
+      "unit": "px"
+    },
+    {
+      "key": "width",
+      "label": "Ring width",
+      "type": "number",
+      "default": 2,
+      "min": 1,
+      "max": 6,
+      "step": 0.5,
+      "unit": "px"
+    },
+    {
+      "key": "clip",
+      "label": "Stay inside",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "duration",
+      "label": "Duration",
+      "type": "number",
+      "default": 900,
+      "min": 300,
+      "max": 4000,
+      "step": 50,
+      "unit": "ms"
+    },
+    {
+      "key": "opacity",
+      "label": "Opacity",
+      "type": "number",
+      "default": 1,
+      "min": 0.05,
+      "max": 1,
+      "step": 0.05
+    }
   ],
   "respectsReducedMotion": true,
-  "origin": { "builtin": true }
+  "origin": {
+    "builtin": true
+  }
 }

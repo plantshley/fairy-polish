@@ -148,8 +148,12 @@ export function dropApplied() {
   emit('commit')
 }
 
+// Clear empties the notes too (undo brings both back).
 export function clearAll() {
-  commit((ch) => ch.splice(0))
+  commit((ch) => {
+    ch.splice(0)
+    data.notes = ''
+  })
 }
 
 export function removeChange(id) {

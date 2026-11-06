@@ -15,13 +15,16 @@ For several flowers, space them evenly along the container's bottom (`left: (i +
 ## Params
 
 - `palette` (Flower colors): palette, default `flower` (the games hub's flower colors). Flower i uses color i, wrapping around.
+- `center` (Center): color, default `#ffeb12`. The yellow inside the white center. At the default, keep the original `linear-gradient(90deg, #ffeb12, #ffce00)`; otherwise run from the color to the color mixed 15% with black.
 - `count` (Flowers): number, default `3`
 - `height` (Visible height): how much of the container's height the flower may fill, in %, default `60`. A taller flower is cropped, not squished: move it down so the stem runs off the container's bottom edge (`bottom: min(0px, <height>% of the container - <flower height>)`, with the container clipping overflow). A flower shorter than this just stands on the bottom; raise `size` to make it taller.
 - `size` (Bloom size): the flower's scale (all of it, stem included), default `1` (the games hub uses `0.35` at full-screen size)
 - `randomness` (Randomness): number, default `0.3`. Jitters each flower's position, size, visible height, bloom delay, and sway speed.
 - `sparkles` (Rising sparkles), `glow` (Glow): booleans, default `true`. Drop the matching markup when off.
+- `sparkA` (Sparkle color), `sparkB` (Sparkle color 2): colors, defaults `#fffb00` and `#ffffff`. The sparkles alternate between them (in the CSS, `.sp:nth-child(odd)` gets `sparkB`); each one's glow is its color at 60% (`sparkA`) or 50% (`sparkB`) opacity.
 - `speed` (Speed): number, default `1`. Divides every duration and delay.
 - `seed` (Layout seed): only for the preview's random jitter.
+- `opacity` (Opacity): number from 0 to 1, default `1`. The whole effect's opacity: set it on the effect's own layer, not the element, so the element's content stays opaque.
 
 ## Reduced motion
 

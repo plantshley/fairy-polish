@@ -14,9 +14,9 @@
 [data-fp-bloom] .pt3 { transform: translate(-90%, 0%) rotateY(45deg) rotateX(50deg); }
 [data-fp-bloom] .pt4 { width: 8cqmin; height: 8cqmin; transform-origin: bottom left; border-radius: 4cqmin 10cqmin 4cqmin 4cqmin; transform: translate(0%, 18%) rotateX(70deg) rotate(-43deg); background-image: linear-gradient(to top, var(--fl-c), var(--fl-l)); z-index: 1; opacity: 0.8; }
 [data-fp-bloom] .ct { position: absolute; left: -3.5cqmin; top: -3cqmin; width: 9cqmin; height: 4cqmin; border-radius: 50%; background-color: #fff; }
-[data-fp-bloom] .ct::after { content: ""; position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%); width: 60%; height: 60%; border-radius: inherit; background-image: linear-gradient(90deg, #ffeb12, #ffce00); }
-[data-fp-bloom] .sp { position: absolute; bottom: 0; width: 1.5cqmin; height: 1.5cqmin; background-color: #fffb00; border-radius: 50%; filter: blur(0.15cqmin); box-shadow: 0 0 3cqmin 1cqmin rgba(255, 251, 0, 0.6); animation: fp-bl-light calc(4s * var(--t)) linear infinite backwards; }
-[data-fp-bloom] .sp:nth-child(odd) { background-color: #fff; box-shadow: 0 0 3cqmin 1cqmin rgba(255, 255, 255, 0.5); }
+[data-fp-bloom] .ct::after { content: ""; position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%); width: 60%; height: 60%; border-radius: inherit; background-image: var(--fp-bl-center, linear-gradient(90deg, #ffeb12, #ffce00)); }
+[data-fp-bloom] .sp { position: absolute; bottom: 0; width: 1.5cqmin; height: 1.5cqmin; background-color: var(--fp-bl-sp-a, #fffb00); border-radius: 50%; filter: blur(0.15cqmin); box-shadow: 0 0 3cqmin 1cqmin color-mix(in srgb, var(--fp-bl-sp-a, #fffb00) 60%, transparent); animation: fp-bl-light calc(4s * var(--t)) linear infinite backwards; }
+[data-fp-bloom] .sp:nth-child(odd) { background-color: var(--fp-bl-sp-b, #fff); box-shadow: 0 0 3cqmin 1cqmin color-mix(in srgb, var(--fp-bl-sp-b, #fff) 50%, transparent); }
 [data-fp-bloom] .sp1 { left: -2cqmin; animation-delay: calc(var(--d) + 1s * var(--t)); }
 [data-fp-bloom] .sp2 { left: 3cqmin; animation-delay: calc(var(--d) + 0.5s * var(--t)); }
 [data-fp-bloom] .sp3 { left: -6cqmin; animation-delay: calc(var(--d) + 0.3s * var(--t)); }

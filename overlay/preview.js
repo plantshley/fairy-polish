@@ -14,7 +14,8 @@ import { normalizeColor } from './tokens.js'
 import { themeWrap, currentTheme } from './theme.js'
 import { mediaMatches } from './media.js'
 import { state } from './state.js'
-import { loadEffect } from './effects.js'
+import { loadEffect, effectMeta } from './effects.js'
+import { applyInText } from './textmask.js'
 
 const STYLE_ID = 'fp-preview'
 
@@ -298,14 +299,21 @@ async function renderEffects(doc) {
       const apply = await loadEffect(c.effect, [doc])
       const entry = map.get(id)
       if (!entry || entry.el !== el) continue
-      // part: text runs the effect on the text wrapper(s) instead of the box.
-      const hosts = c.target.part === 'text' ? [...el.querySelectorAll(':scope > [data-fp-text]')] : [el]
-      const cleanups = hosts.map((n) => apply(n, c.params || {}))
-      entry.cleanup = () => cleanups.forEach(safe)
+      entry.cleanup = runOn(el, c.effect, apply, c.params || {}, c.target.part === 'text')
     } catch (err) {
       console.warn('[fairy-polish] effect failed', c.effect, err)
     }
   }
+}
+
+// Runs an effect on el. Text only: layered effects (effect.json "textMask")
+// are masked to the letters; the rest run on the text wrapper(s), so a float
+// or glow moves or lights the words rather than the box.
+export function runOn(el, id, apply, params, textOnly) {
+  if (textOnly && effectMeta(id)?.textMask) return applyInText(el, apply, params)
+  const hosts = textOnly ? [...el.querySelectorAll(':scope > [data-fp-text]')] : [el]
+  const cleanups = hosts.map((n) => apply(n, params))
+  return () => cleanups.forEach(safe)
 }
 
 function sigOf(c) {

@@ -15,6 +15,7 @@ Original (making-thinking-visual `Github-Setup-Starmap/styles.css`): a `.shootin
 - `tailB` (Tail color 2): color, default `#ffd856`
 - `travel` (Travel): number, default `300` px
 - `duration` (Duration): number, default `3000` ms
+- `opacity` (Opacity): number from 0 to 1, default `1`. The whole effect's opacity: set it on the effect's own layer, not the element, so the element's content stays opaque.
 
 The change file gives the values the user chose. Map colors to the project's existing tokens when one matches.
 

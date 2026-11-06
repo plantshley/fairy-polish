@@ -22,14 +22,21 @@ function run(el, params) {
   const n = Math.max(1, Math.round(params.count ?? 3))
   const chaos = params.randomness ?? 0.3
   l.style.setProperty('--fp-bloom-speed', String(1 / (params.speed || 1)))
+  // The center keeps the original yellow gradient until it is changed.
+  if (params.center && params.center.toLowerCase() !== '#ffeb12') l.style.setProperty('--fp-bl-center', `linear-gradient(90deg, ${params.center}, color-mix(in srgb, ${params.center} 85%, #000))`)
+  if (params.sparkA) l.style.setProperty('--fp-bl-sp-a', params.sparkA)
+  if (params.sparkB) l.style.setProperty('--fp-bl-sp-b', params.sparkB)
   for (let i = 0; i < n; i++) {
     const c = toHex(colors[i % colors.length])
+    const raw = colors[i % colors.length]
+    // A color shade() can't read (a token, a named color) shades with color-mix instead.
+    const [fc, fd, fl] = c ? [c, shade(c, 0.5), shade(c, 1.4)] : [raw, `color-mix(in srgb, ${raw} 50%, #000)`, `color-mix(in srgb, ${raw} 60%, #fff)`]
     const f = doc.createElement('div')
     f.setAttribute('data-fp-bloom', '')
     const x = ((i + 1) / (n + 1)) * 100 + (rnd() * 2 - 1) * chaos * (40 / n)
     const s = (params.size ?? 1) * (1 + (rnd() * 2 - 1) * chaos * 0.4)
     const tall = (params.height ?? 60) * (1 + (rnd() * 2 - 1) * chaos * 0.3)
-    f.style.cssText = `left:${x.toFixed(2)}%;--s:${s.toFixed(3)};--tall:${Math.min(100, tall).toFixed(1)};--fl-c:${c};--fl-d:${shade(c, 0.5)};--fl-l:${shade(c, 1.4)};--d:${(rnd() * chaos * 1.5).toFixed(2)}s;--sway:${(3.5 + rnd() * chaos * 2).toFixed(2)}s;`
+    f.style.cssText = `left:${x.toFixed(2)}%;--s:${s.toFixed(3)};--tall:${Math.min(100, tall).toFixed(1)};--fl-c:${fc};--fl-d:${fd};--fl-l:${fl};--d:${(rnd() * chaos * 1.5).toFixed(2)}s;--sway:${(3.5 + rnd() * chaos * 2).toFixed(2)}s;`
     f.innerHTML = flower(params)
     l.append(f)
   }
@@ -47,15 +54,20 @@ function flower(params) {
 
 
 // Palette entries may be any CSS color; flowers need a hex to shade.
+// Returns null for colors it can't read.
 function toHex(c) {
-  if (/^#[0-9a-f]{6}$/i.test(c)) return c
+  c = String(c).trim()
+  if (/^#[0-9a-f]{3}$/i.test(c)) c = '#' + [...c.slice(1)].map((x) => x + x).join('')
+  if (/^#[0-9a-f]{6}/i.test(c)) return c.slice(0, 7)
+  const rgb = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/i.exec(c)
+  if (rgb) return '#' + rgb.slice(1, 4).map((v) => Math.round(+v).toString(16).padStart(2, '0')).join('')
   const m = /hsl\((\d+)/.exec(c)
   if (m) {
     const h = +m[1] / 60
     const f = (k) => Math.round(255 * Math.max(0, Math.min(1, Math.abs(((h + k) % 6) - 3) - 1)))
     return '#' + [f(0), f(4), f(2)].map((v) => v.toString(16).padStart(2, '0')).join('')
   }
-  return '#ef8bbd'
+  return null
 }
 
 // The games hub's darken (0.5) and lighten (1.4): each channel scaled.

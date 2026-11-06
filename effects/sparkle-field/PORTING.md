@@ -17,6 +17,7 @@ Original: master-dashboard `src/components/HeroSparkles/HeroSparkles.jsx` and `.
 - `size` (Star size): max star radius in px, default `5`; min is 40% of it.
 - `origin` (Burst from): `center` (the original: one emitter in the middle) or `scattered` (each burst from a random point, for large backgrounds).
 - `bleed` (Overflow): px the canvas extends past the element, default `32`.
+- `opacity` (Opacity): number from 0 to 1, default `1`. The whole effect's opacity: set it on the effect's own layer, not the element, so the element's content stays opaque.
 
 The layer sits behind the content: first child, `z-index: -1`, and `isolation: isolate` on the container so it stays above the container's background.
 

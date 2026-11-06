@@ -1,0 +1,72 @@
+{
+  "id": "grain",
+  "name": "Grain",
+  "category": "background",
+  "target": "background",
+  "textMask": true,
+  "alsoIn": {
+    "loop": {
+      "animate": true
+    }
+  },
+  "params": [
+    {
+      "key": "opacity",
+      "label": "Strength",
+      "type": "number",
+      "default": 0.05,
+      "min": 0.01,
+      "max": 0.5,
+      "step": 0.01
+    },
+    {
+      "key": "size",
+      "label": "Tile size",
+      "type": "number",
+      "default": 200,
+      "min": 50,
+      "max": 600,
+      "step": 10,
+      "unit": "px"
+    },
+    {
+      "key": "fineness",
+      "label": "Fineness",
+      "type": "number",
+      "default": 0.65,
+      "min": 0.2,
+      "max": 1.5,
+      "step": 0.05
+    },
+    {
+      "key": "blend",
+      "label": "Blend",
+      "type": "select",
+      "default": "normal",
+      "options": [
+        "normal",
+        "overlay",
+        "soft-light",
+        "multiply",
+        "screen"
+      ]
+    },
+    {
+      "key": "over",
+      "label": "Over content",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "animate",
+      "label": "Animate",
+      "type": "boolean",
+      "default": false
+    }
+  ],
+  "respectsReducedMotion": true,
+  "origin": {
+    "repo": "SDSHC-check-in (from SDSHC-games-hub)",
+    "file": "check-in src/ui/ui.css (.gb-noise); games hub src/styles/advanced.css"
+  }
+}

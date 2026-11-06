@@ -22,6 +22,7 @@ Generate per-particle paths in a Sass loop, or in JS once with `element.animate(
 - `direction` (Direction): `up` (the original) or `down`
 - `backdrop` (Fill behind): boolean, default `false`; `backdropColor` (Fill color), default `#021027`
 - `seed` (Layout seed): only for the preview's random paths.
+- `opacity` (Opacity): number from 0 to 1, default `1`. The whole effect's opacity: set it on the effect's own layer, not the element, so the element's content stays opaque.
 
 ## Reduced motion
 

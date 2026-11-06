@@ -6,14 +6,14 @@
 import { h, clear, put, DISPLAY_NAME } from './dom.js'
 import { state, savePrefs, uiChanged, onUi } from './state.js'
 import { sectionReset } from './edit.js'
-import { getChanges, subscribe, undo, redo, canUndo, canRedo, clearAll, removeChanges, getNotes, setNotes, setChangeNote, setHidden } from './store.js'
+import { removeChange, getChanges, subscribe, undo, redo, canUndo, canRedo, clearAll, removeChanges, getNotes, setNotes, setChangeNote, setHidden } from './store.js'
 import {
-  lengthField, selectField, textField, colorField, quadField, textInput, dropdown, segmented, combo, field,
+  lengthField, selectField, textField, colorField, quadField, setColorSources, textInput, dropdown, segmented, combo, field,
   gradientEditor, closeMenu, colorChips,
 } from './controls.js'
 import {
   setStyle, setStyles, valueFor, setName, setText, textChangeFor, currentSize, currentBand, pageTheme, shipped, addEffect,
-  addToGallery, setKeyframes, keyframesValue,
+  addToGallery, setKeyframes, keyframesValue, updateEffect,
 } from './edit.js'
 import { bands, previewSizeFor } from './media.js'
 import { describe } from './locate.js'
@@ -26,7 +26,7 @@ import { saveChanges } from './export.js'
 import { select, startTextEdit } from './select.js'
 import { hasOwnText, trappingAncestors, withPreviewOff } from './preview.js'
 import { findExisting, nth, withNth } from './existing.js'
-import { LENGTHS, SHADOWS, TEXT_SHADOWS, FILTERS } from './presets.js'
+import { LENGTHS, SHADOWS, TEXT_SHADOWS, FILTERS, BACKDROPS, FROSTED } from './presets.js'
 import { base } from './config.js'
 
 let panel
@@ -39,6 +39,8 @@ let shadow
 let pending = false
 let busy = false
 let pageColorCache = null
+// Every swatch's popover (effect params, gradient stops, chips) offers these.
+setColorSources(() => ({ tokens: state.tokens?.colors || [], swatches: pageColorCache?.colors || [] }))
 const checked = new Set()
 
 export function initPanel(rootEl, shadowRoot) {
@@ -55,10 +57,12 @@ export function initPanel(rootEl, shadowRoot) {
   rootEl.append(panel)
   rootEl.style.setProperty('--fp-panel-w', state.panelW + 'px')
   panel.addEventListener('pointerdown', () => (busy = true))
-  shadow.ownerDocument.addEventListener('pointerup', () => {
+  // Wait until the click that follows this pointerup has run: redrawing
+  // first would replace the button under the pointer and swallow the click.
+  shadow.ownerDocument.addEventListener('pointerup', () => setTimeout(() => {
     busy = false
     flush()
-  })
+  }, 0))
   panel.addEventListener('focusout', () => setTimeout(flush, 0))
   body.addEventListener('scroll', closeMenu)
   subscribe(() => schedule())
@@ -213,9 +217,9 @@ function renderBar() {
     ),
     h('div', { class: 'fp-row', style: { flexWrap: 'nowrap' } },
       h('span', { class: 'fp-kbd', title: 'The size the page is shown at. It does not change what edits apply to.' }, 'viewing'),
+      dropdown(viewKey(), viewItems(list), pickView, { cls: 'sm', title: 'Show the page at a common screen size' }),
       wIn, h('span', { class: 'fp-kbd' }, '×'), hIn,
       h('button', { class: 'fp-icon', title: 'Swap width and height', disabled: state.frameSize ? null : true, onClick: rotate }, '⟲'),
-      state.frameSize ? h('button', { class: 'fp-icon', title: 'Back to the full window', onClick: () => { state.frameSize = null; state.preset = 'desktop'; uiChanged('size') } }, '⤢') : null,
       h('span', { class: 'grow' }),
       state.themeMode
         ? h('button', { class: 'fp-btn', title: 'Preview the page in light or dark', onClick: () => uiChanged('pageTheme') }, pageTheme() === 'dark' ? '☾ dark' : '☀ light')
@@ -234,10 +238,75 @@ function renderBar() {
   }
 }
 
+// Common screen sizes for the viewing menu, by kind of device.
+// Common screen sizes for the viewing menu, by kind of device. Phone and
+// tablet sizes are the whole screen (browsers there run full screen).
+// Desktop sizes are a browser window's page area, below the tabs and
+// address bar; the full screen group is the whole monitor (kiosk mode,
+// presentations, F11).
+const DEVICES = [
+  ['mobile', 360, 800, 'Android'], ['mobile', 375, 667, 'iPhone SE'], ['mobile', 390, 844, 'iPhone'], ['mobile', 430, 932, 'iPhone Pro Max'],
+  ['tablet', 768, 1024, 'iPad mini'], ['tablet', 820, 1180, 'iPad Air'], ['tablet', 1024, 1366, 'iPad Pro'],
+  ['desktop window', 1280, 720, 'small laptop'], ['desktop window', 1366, 657, '1366×768 laptop'], ['desktop window', 1440, 789, 'MacBook Air'],
+  ['desktop window', 1536, 730, 'laptop at 125%'], ['desktop window', 1920, 953, 'HD monitor'], ['desktop window', 2560, 1305, 'QHD monitor'],
+  ['full screen', 1366, 768, 'laptop'], ['full screen', 1920, 1080, 'HD monitor or TV'], ['full screen', 2560, 1440, 'QHD monitor'], ['full screen', 3840, 2160, '4K monitor or TV'],
+]
+
+// One item per edit size range (shown at that range's preview size), then
+// the common sizes, with this monitor first among the full screen ones.
+function viewItems(list) {
+  const items = [{ value: 'window', label: 'this window', hint: 'no frame' }]
+  list.forEach((b, i) => {
+    const s = previewSizeFor(b, state.orient)
+    items.push({ value: `band:${i}`, label: b.name, hint: `${s.w}×${s.h}`, group: 'edit sizes' })
+  })
+  const mine = `${screen.width}x${screen.height}`
+  for (const [kind, w, hh, name] of DEVICES) {
+    if (kind === 'full screen' && !items.some((i) => i.value === mine)) items.push({ value: mine, label: `${screen.width}×${screen.height}`, hint: 'this monitor', group: kind })
+    if (`${w}x${hh}` !== mine) items.push({ value: `${w}x${hh}`, label: `${w}×${hh}`, hint: name, group: kind })
+  }
+  const key = viewKey()
+  if (!items.some((i) => i.value === key)) items.splice(1, 0, { value: key, label: 'custom', hint: key.replace('x', '×') })
+  return items
+}
+
+function viewKey() {
+  const f = state.frameSize
+  if (!f) return 'window'
+  const i = bands(state.breakpoints).findIndex((b) => { const s = previewSizeFor(b, state.orient); return s.w === f.w && s.h === f.h })
+  if (i >= 0) return `band:${i}`
+  return `${f.w}x${f.h}`
+}
+
+// Only changes what the page is shown at, never which sizes edits go to.
+function pickView(v) {
+  if (v === 'window') state.frameSize = null
+  else if (v.startsWith('band:')) state.frameSize = previewSizeFor(bands(state.breakpoints)[+v.slice(5)], state.orient)
+  else {
+    const [w, hh] = v.split('x').map(Number)
+    state.frameSize = { w, h: hh }
+  }
+  state.preset = state.frameSize ? 'custom' : 'desktop'
+  uiChanged('size')
+}
+
 function rotate() {
   if (!state.frameSize) return
   state.frameSize = { w: state.frameSize.h, h: state.frameSize.w }
   uiChanged('size')
+}
+
+// A filter on the element's background only, kept as the background-filter
+// effect so the agent gets its porting notes.
+function bgFilterField(el) {
+  const c = getChanges().find((x) => x.type === 'effect' && x.effect === 'background-filter' && x.target.fpId === el.dataset.fpId)
+  const set = (v) => {
+    const val = String(v || '').trim()
+    if (!val || val === 'none') return c && removeChange(c.id)
+    if (c) updateEffect(c.id, { params: { ...c.params, filter: val } })
+    else addEffect(el, 'background-filter', { filter: val, edges: 'soft' })
+  }
+  return textField('background filter', c?.params?.filter || 'none', set, { key: 'bg-filter', presets: FILTERS })
 }
 
 function count(doc, sel) {
@@ -322,7 +391,7 @@ function pickedIds() {
 }
 
 function confirmClear() {
-  if (view.win.confirm('Remove every change in this session?')) clearAll()
+  if (view.win.confirm('Remove every change and the notes in this session?')) clearAll()
 }
 
 /* ── body ───────────────────────────────────────────────────────────────── */
@@ -426,6 +495,11 @@ function renderEdit() {
   const isGrid = cs.display.includes('grid')
   const ownText = hasOwnText(el)
   const existing = findExisting(el)
+  // Text only styles an inline wrapper around the words, so box-only
+  // settings (layout, size, alignment, vertical margins, background and
+  // backdrop filters) are left out.
+  const tx = state.part === 'text' && ownText
+  const box = (node) => (tx ? null : node)
 
   put(body,
     h('div', { class: 'fp-crumbs' }, crumbs.slice(-6).map((n) =>
@@ -440,8 +514,8 @@ function renderEdit() {
     sec('Name', !!named,
       h('div', { class: 'fp-help' }, 'A label for this element. It appears in the change file and the Changes tab, so you and the agent can refer to it by name.'),
       textField('name', named?.name || '', (v) => setName(el, v), { placeholder: 'e.g. Hero stat card' })),
-    existing.length ? sec('Existing effects', true, existingSection(el, existing)) : null,
-    sec('Layout', true,
+    existing.length && !tx ? sec('Existing effects', true, existingSection(el, existing)) : null,
+    tx ? null : sec('Layout', true,
       S('display', 'display', ['block', 'flex', 'grid', 'inline-block', 'inline', 'inline-flex', 'inline-grid', 'none']),
       isFlex ? S('direction', 'flex-direction', ['row', 'row-reverse', 'column', 'column-reverse']) : null,
       isFlex || isGrid ? S('justify', 'justify-content', ['normal', 'flex-start', 'center', 'flex-end', 'space-between', 'space-around', 'space-evenly']) : null,
@@ -454,8 +528,8 @@ function renderEdit() {
       S('position', 'position', ['static', 'relative', 'absolute', 'fixed', 'sticky']),
       layerField(el),
     ),
-    sec('Size', true, L('width', 'width'), L('height', 'height'), L('min width', 'min-width'), L('max width', 'max-width'), L('min height', 'min-height'), L('max height', 'max-height')),
-    sec('Spacing', true, Q('margin', 'margin'), Q('padding', 'padding')),
+    tx ? null : sec('Size', true, L('width', 'width'), L('height', 'height'), L('min width', 'min-width'), L('max width', 'max-width'), L('min height', 'min-height'), L('max height', 'max-height')),
+    sec('Spacing', true, box(Q('margin', 'margin')), Q('padding', 'padding')),
     sec('Type', true,
       fontField(el, valueFor(el, 'font-family'), doc),
       L('size', 'font-size'),
@@ -463,7 +537,7 @@ function renderEdit() {
       L('line height', 'line-height'),
       L('letter spacing', 'letter-spacing'),
       textFill(el, C),
-      S('align', 'text-align', ['start', 'left', 'center', 'right', 'justify']),
+      box(S('align', 'text-align', ['start', 'left', 'center', 'right', 'justify'])),
       S('transform', 'text-transform', ['none', 'uppercase', 'lowercase', 'capitalize']),
       S('style', 'font-style', ['normal', 'italic']),
       S('decoration', 'text-decoration-line', ['none', 'underline', 'line-through', 'overline']),
@@ -483,6 +557,12 @@ function renderEdit() {
       T('shadow', 'box-shadow', SHADOWS, { chips: true }),
       T('text shadow', 'text-shadow', TEXT_SHADOWS, { chips: true }),
       T('filter', 'filter', FILTERS, { chips: true }),
+      box(bgFilterField(el)),
+      box(T('backdrop filter', 'backdrop-filter', BACKDROPS)),
+      box(h('div', { class: 'fp-help' }, 'filter: the whole element, text included. background filter: only its own background, so text stays sharp. backdrop filter: what shows through from behind it.')),
+      box(h('div', { class: 'fp-row' },
+        h('span', { class: 'fp-help grow' }, 'Frosted glass: a backdrop blur on a see-through background with a faint edge.'),
+        h('button', { class: 'fp-btn', onClick: () => setStyles(el, FROSTED) }, '+ frosted glass'))),
       h('div', { class: 'fp-row' },
         h('span', { class: 'fp-help grow' }, 'Each shadow color is solid. For a gradient glow, attach the gradient glow effect.'),
         h('button', { class: 'fp-btn', onClick: () => { addEffect(el, 'gradient-glow', { palette: 'rainbow', trigger: 'loop', blur: 8, spread: 5, duration: 20000 }); focusSection('Effects') } }, '+ gradient glow')),

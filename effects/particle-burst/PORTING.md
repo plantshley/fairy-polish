@@ -14,6 +14,7 @@ Original (games-hub `src/screens/intro.js`): `spawnBurstParticles(container, x, 
 - `size` (Size): number, default `12` px
 - `distance` (Distance): number, default `80` px
 - `palette` (Colors): select, default `neon`
+- `opacity` (Opacity): number from 0 to 1, default `1`. The whole effect's opacity: set it on the effect's own layer, not the element, so the element's content stays opaque.
 
 The change file gives the values the user chose. Map colors to the project's existing tokens when one matches.
 

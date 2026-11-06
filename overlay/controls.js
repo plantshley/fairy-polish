@@ -222,16 +222,139 @@ export function toHex(rgb) {
   return '#' + [r, g, b].map((n) => Math.round(n).toString(16).padStart(2, '0')).join('')
 }
 
-// Just the swatch with the native picker inside it.
+// Where swatch popovers get the site's color tokens and page colors from.
+// The panel sets this; returns { tokens: [{ name, value }], swatches: [css] }.
+let colorSources = () => ({ tokens: [], swatches: [] })
+export function setColorSources(fn) {
+  colorSources = fn
+}
+
+// A color split into an opaque base and an alpha, so opacity can be set on
+// its own: rgba(), #rrggbbaa, and color-mix(… N%, transparent) all unpack.
+export function splitAlpha(value) {
+  const v = String(value ?? '').trim()
+  const mix = /^color-mix\(in srgb,\s*(.+?)\s+([\d.]+)%,\s*transparent\)$/i.exec(v)
+  if (mix) return { base: mix[1], a: +mix[2] / 100 }
+  if (/^#[0-9a-f]{8}$/i.test(v)) return { base: v.slice(0, 7), a: +(parseInt(v.slice(7), 16) / 255).toFixed(2) }
+  if (/^#[0-9a-f]{4}$/i.test(v)) return { base: v.slice(0, 4), a: +(parseInt(v[4] + v[4], 16) / 255).toFixed(2) }
+  if (/^rgba?\(/i.test(v)) return { base: toHex(v), a: alphaOf(v) }
+  return { base: v, a: 1 }
+}
+
+export function joinAlpha(base, a) {
+  if (!(a < 1)) return base
+  const hex = /^#[0-9a-f]{3}$/i.test(base) ? toHex(base) : base
+  if (/^#[0-9a-f]{6}$/i.test(hex)) {
+    const n = parseInt(hex.slice(1), 16)
+    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${+a.toFixed(2)})`
+  }
+  return `color-mix(in srgb, ${base} ${Math.round(a * 100)}%, transparent)`
+}
+
+// The swatch. Clicking it opens a popover with the native picker, a hex
+// field, opacity, the eyedropper, and the page's tokens and colors.
+// onInput fires while dragging, onChange once a pick settles.
 export function swatch(value, onInput, { onChange } = {}) {
   const chip = h('i', { style: { background: value } })
-  const native = h('input', { type: 'color', value: toHex(value) })
-  native.addEventListener('input', () => {
-    chip.style.background = native.value
-    onInput(native.value)
+  const sw = h('button', { class: 'fp-sw', type: 'button', title: String(value ?? '') }, chip)
+  let cur = value
+  const set = (v, done) => {
+    cur = v
+    chip.style.background = v
+    sw.title = v
+    onInput(v)
+    if (done) onChange?.(v)
+  }
+  sw.addEventListener('click', (e) => {
+    e.preventDefault()
+    if (popOpenFor(sw)) return closePop()
+    openColorPop(sw, cur, set)
   })
-  if (onChange) native.addEventListener('change', () => onChange(native.value))
-  return h('span', { class: 'fp-sw' }, chip, native)
+  return sw
+}
+
+let pop = null
+function closePop() {
+  if (!pop) return
+  pop.el.remove()
+  pop.off()
+  pop = null
+}
+function popOpenFor(anchor) {
+  return pop?.anchor === anchor
+}
+
+function openColorPop(anchor, value, set) {
+  closePop()
+  closeMenu()
+  const root = anchor.getRootNode().querySelector('.fp-root')
+  let { base, a } = splitAlpha(value)
+  const out = () => joinAlpha(base, a)
+  const native = h('input', { type: 'color', value: toHex(resolveHex(base, root)) })
+  const hex = h('input', { class: 'fp-in', value: base, spellcheck: 'false' })
+  const range = h('input', { class: 'fp-in', type: 'range', min: 0, max: 100, step: 1, value: Math.round(a * 100) })
+  const pct = h('span', { class: 'fp-kbd' }, Math.round(a * 100) + '%')
+  native.addEventListener('input', () => { base = native.value; hex.value = base; set(out()) })
+  native.addEventListener('change', () => set(out(), true))
+  hex.addEventListener('keydown', (e) => e.stopPropagation())
+  hex.addEventListener('change', () => {
+    const v = hex.value.trim()
+    if (!CSS.supports('color', v)) return
+    ;({ base, a } = (() => { const s = splitAlpha(v); return { base: s.base, a: s.a < 1 ? s.a : a } })())
+    native.value = toHex(resolveHex(base, root))
+    range.value = Math.round(a * 100)
+    pct.textContent = range.value + '%'
+    set(out(), true)
+  })
+  range.addEventListener('input', () => { a = +range.value / 100; pct.textContent = range.value + '%'; set(out()) })
+  range.addEventListener('change', () => set(out(), true))
+  const pick = (v) => {
+    base = v
+    hex.value = v
+    native.value = toHex(resolveHex(v, root))
+    set(out(), true)
+  }
+  const dropper = 'EyeDropper' in window
+    ? h('button', { class: 'fp-icon', type: 'button', title: 'Pick a color from the screen', onClick: async () => { try { pick((await new window.EyeDropper().open()).sRGBHex) } catch {} } }, '⌖')
+    : null
+  const { tokens = [], swatches = [] } = colorSources() || {}
+  const el = h('div', { class: 'fp-cpop' },
+    h('div', { class: 'fp-row', style: { flexWrap: 'nowrap' } }, h('span', { class: 'fp-cpop-native' }, native), hex, dropper),
+    h('div', { class: 'fp-row', style: { flexWrap: 'nowrap' } }, h('span', { class: 'fp-kbd' }, 'opacity'), range, pct),
+    tokens.length ? h('div', { class: 'fp-kbd' }, 'tokens') : null,
+    tokens.length ? h('div', { class: 'fp-swatches' }, tokens.map((t) => h('button', { class: 'fp-sw', type: 'button', title: `var(${t.name})  ${t.value}`, onClick: () => pick(`var(${t.name})`) }, h('i', { style: { background: t.value } })))) : null,
+    swatches.length ? h('div', { class: 'fp-kbd' }, 'on page') : null,
+    swatches.length ? h('div', { class: 'fp-swatches' }, swatches.map((c) => h('button', { class: 'fp-sw', type: 'button', title: c, onClick: () => pick(c) }, h('i', { style: { background: c } })))) : null,
+  )
+  root.append(el)
+  const r = anchor.getBoundingClientRect()
+  const ph = el.offsetHeight
+  const top = Math.min(innerHeight - ph - 4, innerHeight - r.bottom - 8 >= ph ? r.bottom + 4 : Math.max(4, r.top - 4 - ph))
+  Object.assign(el.style, { left: Math.max(4, Math.min(r.left, innerWidth - el.offsetWidth - 4)) + 'px', top: top + 'px' })
+  const doc = root.ownerDocument
+  const away = (e) => {
+    const path = e.composedPath()
+    if (!path.includes(el) && !path.includes(anchor)) closePop()
+  }
+  const key = (e) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation()
+      closePop()
+    }
+  }
+  doc.addEventListener('pointerdown', away, true)
+  doc.addEventListener('keydown', key, true)
+  pop = { el, anchor, off: () => { doc.removeEventListener('pointerdown', away, true); doc.removeEventListener('keydown', key, true) } }
+}
+
+// A hex for the native picker from any CSS color (a token, a name, hsl()).
+function resolveHex(c, root) {
+  if (/^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(c)) return c
+  const probe = h('i', { style: { color: c, display: 'none' } })
+  root.append(probe)
+  const rgb = getComputedStyle(probe).color
+  probe.remove()
+  return toHex(rgb)
 }
 
 // The "page colors and tokens" button: a little 2×2 swatch grid.
@@ -346,7 +469,9 @@ export function colorChips(value, onSet, { key = 'chips' } = {}) {
   ;[...groups].forEach(([base, uses], i) => {
     let now = [...uses]
     const sw = swatch(base, (hex) => {
-      const next = uses.map((orig) => withAlpha(hex, orig))
+      // A plain hex keeps each use's own alpha; an opacity set in the
+      // popover (or a token) replaces it.
+      const next = uses.map((orig) => (/^#[0-9a-f]{6}$/i.test(hex) ? withAlpha(hex, orig) : hex))
       now.forEach((c, k) => (cur = cur.split(c).join(next[k])))
       now = next
       sw.title = hex

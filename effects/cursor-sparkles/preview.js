@@ -17,6 +17,7 @@ function run(el, params) {
   const canvas = doc.createElement('canvas')
   canvas.setAttribute('data-fp-cursor-sparkles', '')
   canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:2147483000'
+  canvas.style.opacity = String(params.opacity ?? 1)
   doc.body.append(canvas)
   const ctx = canvas.getContext('2d')
   const pool = []

@@ -17,11 +17,14 @@ The random paths need generated keyframes. Either a Sass loop (fixed at build ti
 ## Params
 
 - `color` (Glow): color, default `#ffff00` (the original's `yellow`)
+- `core` (Flash core): color, default `#ffffff`. The light's center while it flashes (the original's white `::after`).
+- `body` (Body (unlit)): color, default `rgba(0, 0, 0, 0.4)`. The dot shown between flashes (the original's black `::before` at opacity 0.4).
 - `count` (Fireflies): number, default `15`
 - `size` (Size): px, default `6` (the original's `0.4vw` at 1440px). The flash glow is 5 times the size, with a spread of 1 size.
 - `range` (Roaming): number, default `1`. 1 roams the whole container; smaller keeps them near the center.
 - `speed` (Speed): number, default `1`. Divides the move, spin, and flash durations.
 - `seed` (Layout seed): only for the preview's random paths.
+- `opacity` (Opacity): number from 0 to 1, default `1`. The whole effect's opacity: set it on the effect's own layer, not the element, so the element's content stays opaque.
 
 ## Reduced motion
 

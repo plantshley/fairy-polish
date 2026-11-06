@@ -112,3 +112,24 @@ export function loadGoogle(doc, families) {
   link.dataset.fpGfont = ''
   doc.head.append(link)
 }
+
+// backdrop-filter presets: frosted glass at three strengths, plus tints.
+export const BACKDROPS = [
+  { value: 'none', label: 'none' },
+  { value: 'blur(6px)', label: 'frosted, light' },
+  { value: 'blur(12px) saturate(1.5)', label: 'frosted glass' },
+  { value: 'blur(24px) saturate(1.8)', label: 'frosted, heavy' },
+  { value: 'blur(12px) brightness(1.1)', label: 'frosted, brighter' },
+  { value: 'blur(12px) brightness(0.8)', label: 'frosted, darker' },
+  { value: 'grayscale(1)', label: 'grayscale behind' },
+]
+
+// The "+ frosted glass" button: a backdrop blur only shows through a
+// see-through background, so it sets one, plus a faint light edge.
+export const FROSTED = {
+  'backdrop-filter': 'blur(12px) saturate(1.5)',
+  'background-color': 'rgba(255, 255, 255, 0.25)',
+  'border-width': '1px',
+  'border-style': 'solid',
+  'border-color': 'rgba(255, 255, 255, 0.4)',
+}

@@ -39,10 +39,39 @@
     }
   },
   {
+    "id": "background-filter",
+    "name": "Filter the background only",
+    "category": "background",
+    "target": "background",
+    "params": [
+      {
+        "key": "filter",
+        "label": "Filter",
+        "type": "text",
+        "default": "blur(6px)"
+      },
+      {
+        "key": "edges",
+        "label": "Edges",
+        "type": "select",
+        "default": "soft",
+        "options": [
+          "soft",
+          "clipped"
+        ]
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "builtin": true
+    }
+  },
+  {
     "id": "blob-background",
     "name": "Floating blobs background",
     "category": "background",
     "target": "background",
+    "textMask": true,
     "params": [
       {
         "key": "palette",
@@ -225,6 +254,8 @@
     "name": "Blooming flowers",
     "category": "background",
     "target": "background",
+    "textMask": true,
+    "layerOpacity": true,
     "alsoIn": {
       "entrance": {},
       "loop": {}
@@ -235,6 +266,12 @@
         "label": "Flower colors",
         "type": "palette",
         "default": "flower"
+      },
+      {
+        "key": "center",
+        "label": "Center",
+        "type": "color",
+        "default": "#ffeb12"
       },
       {
         "key": "count",
@@ -280,6 +317,18 @@
         "default": true
       },
       {
+        "key": "sparkA",
+        "label": "Sparkle color",
+        "type": "color",
+        "default": "#fffb00"
+      },
+      {
+        "key": "sparkB",
+        "label": "Sparkle color 2",
+        "type": "color",
+        "default": "#ffffff"
+      },
+      {
         "key": "glow",
         "label": "Glow",
         "type": "boolean",
@@ -293,6 +342,15 @@
         "min": 0.2,
         "max": 3,
         "step": 0.1
+      },
+      {
+        "key": "opacity",
+        "label": "Opacity",
+        "type": "number",
+        "default": 1,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.05
       },
       {
         "key": "seed",
@@ -317,6 +375,8 @@
     "name": "Bokeh lights",
     "category": "background",
     "target": "background",
+    "textMask": true,
+    "layerOpacity": true,
     "alsoIn": {
       "loop": {}
     },
@@ -377,6 +437,15 @@
         "default": "#3E1E68"
       },
       {
+        "key": "opacity",
+        "label": "Opacity",
+        "type": "number",
+        "default": 1,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.05
+      },
+      {
         "key": "seed",
         "label": "Layout seed",
         "type": "number",
@@ -397,6 +466,7 @@
     "name": "Button shine sweep",
     "category": "hover",
     "target": "element",
+    "textMask": true,
     "params": [
       {
         "key": "color",
@@ -435,6 +505,8 @@
     "name": "Floating color orbs",
     "category": "background",
     "target": "background",
+    "textMask": true,
+    "layerOpacity": true,
     "alsoIn": {
       "loop": {}
     },
@@ -493,6 +565,15 @@
         "label": "Fill color",
         "type": "color",
         "default": "#112233"
+      },
+      {
+        "key": "opacity",
+        "label": "Opacity",
+        "type": "number",
+        "default": 1,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.05
       },
       {
         "key": "seed",
@@ -573,12 +654,92 @@
         "label": "Random pastels instead",
         "type": "boolean",
         "default": false
+      },
+      {
+        "key": "opacity",
+        "label": "Opacity",
+        "type": "number",
+        "default": 1,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.05
       }
     ],
     "respectsReducedMotion": true,
     "origin": {
       "repo": "fairy/fairy-shop",
       "file": "src/components/CursorSparkles.jsx"
+    }
+  },
+  {
+    "id": "drifting-dust",
+    "name": "Drifting dust",
+    "category": "background",
+    "target": "background",
+    "textMask": true,
+    "layerOpacity": true,
+    "alsoIn": {
+      "loop": {}
+    },
+    "params": [
+      {
+        "key": "count",
+        "label": "Specks",
+        "type": "number",
+        "default": 60,
+        "min": 1,
+        "max": 300,
+        "step": 1
+      },
+      {
+        "key": "color",
+        "label": "Color",
+        "type": "color",
+        "default": "#ffffff"
+      },
+      {
+        "key": "size",
+        "label": "Largest size",
+        "type": "number",
+        "default": 4,
+        "min": 1,
+        "max": 20,
+        "step": 0.5,
+        "unit": "px"
+      },
+      {
+        "key": "rise",
+        "label": "Rise",
+        "type": "number",
+        "default": 30,
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "unit": "%"
+      },
+      {
+        "key": "speed",
+        "label": "Speed",
+        "type": "number",
+        "default": 1,
+        "min": 0.2,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "key": "opacity",
+        "label": "Opacity",
+        "type": "number",
+        "default": 1,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.05
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "repo": "SDSHC-games-hub",
+      "file": "src/utils/gradient-bg.js (animateParticle) and src/styles/advanced.css (.adv-gradient-particle)"
     }
   },
   {
@@ -618,6 +779,8 @@
     "name": "Fireflies",
     "category": "background",
     "target": "background",
+    "textMask": true,
+    "layerOpacity": true,
     "alsoIn": {
       "loop": {}
     },
@@ -627,6 +790,18 @@
         "label": "Glow",
         "type": "color",
         "default": "#ffff00"
+      },
+      {
+        "key": "core",
+        "label": "Flash core",
+        "type": "color",
+        "default": "#ffffff"
+      },
+      {
+        "key": "body",
+        "label": "Body (unlit)",
+        "type": "color",
+        "default": "rgba(0, 0, 0, 0.4)"
       },
       {
         "key": "count",
@@ -664,6 +839,15 @@
         "min": 0.2,
         "max": 5,
         "step": 0.1
+      },
+      {
+        "key": "opacity",
+        "label": "Opacity",
+        "type": "number",
+        "default": 1,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.05
       },
       {
         "key": "seed",
@@ -711,6 +895,93 @@
     "respectsReducedMotion": true,
     "origin": {
       "builtin": true
+    }
+  },
+  {
+    "id": "floating-sparkles",
+    "name": "Floating sparkles",
+    "category": "background",
+    "target": "background",
+    "textMask": true,
+    "layerOpacity": true,
+    "alsoIn": {
+      "loop": {}
+    },
+    "params": [
+      {
+        "key": "count",
+        "label": "Sparkles",
+        "type": "number",
+        "default": 40,
+        "min": 1,
+        "max": 200,
+        "step": 1
+      },
+      {
+        "key": "color",
+        "label": "Color",
+        "type": "color",
+        "default": "rgba(255, 255, 255, 0.95)"
+      },
+      {
+        "key": "glowColor",
+        "label": "Glow color",
+        "type": "color",
+        "default": "rgba(255, 255, 255, 0.7)"
+      },
+      {
+        "key": "glow",
+        "label": "Glow size",
+        "type": "number",
+        "default": 6,
+        "min": 0,
+        "max": 30,
+        "step": 1,
+        "unit": "px"
+      },
+      {
+        "key": "size",
+        "label": "Largest size",
+        "type": "number",
+        "default": 4,
+        "min": 1,
+        "max": 20,
+        "step": 0.5,
+        "unit": "px"
+      },
+      {
+        "key": "rise",
+        "label": "Rise",
+        "type": "number",
+        "default": 15,
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "unit": "%"
+      },
+      {
+        "key": "speed",
+        "label": "Speed",
+        "type": "number",
+        "default": 1,
+        "min": 0.2,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "key": "opacity",
+        "label": "Opacity",
+        "type": "number",
+        "default": 1,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.05
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "repo": "SDSHC-check-in",
+      "file": "src/ui/GradientBackground.jsx (animateParticle) and src/ui/ui.css (.gb-particle)"
     }
   },
   {
@@ -917,10 +1188,83 @@
     }
   },
   {
+    "id": "grain",
+    "name": "Grain",
+    "category": "background",
+    "target": "background",
+    "textMask": true,
+    "alsoIn": {
+      "loop": {
+        "animate": true
+      }
+    },
+    "params": [
+      {
+        "key": "opacity",
+        "label": "Strength",
+        "type": "number",
+        "default": 0.05,
+        "min": 0.01,
+        "max": 0.5,
+        "step": 0.01
+      },
+      {
+        "key": "size",
+        "label": "Tile size",
+        "type": "number",
+        "default": 200,
+        "min": 50,
+        "max": 600,
+        "step": 10,
+        "unit": "px"
+      },
+      {
+        "key": "fineness",
+        "label": "Fineness",
+        "type": "number",
+        "default": 0.65,
+        "min": 0.2,
+        "max": 1.5,
+        "step": 0.05
+      },
+      {
+        "key": "blend",
+        "label": "Blend",
+        "type": "select",
+        "default": "normal",
+        "options": [
+          "normal",
+          "overlay",
+          "soft-light",
+          "multiply",
+          "screen"
+        ]
+      },
+      {
+        "key": "over",
+        "label": "Over content",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "animate",
+        "label": "Animate",
+        "type": "boolean",
+        "default": false
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "repo": "SDSHC-check-in (from SDSHC-games-hub)",
+      "file": "check-in src/ui/ui.css (.gb-noise); games hub src/styles/advanced.css"
+    }
+  },
+  {
     "id": "grid-layer",
     "name": "Subtle grid layer",
     "category": "background",
     "target": "background",
+    "textMask": true,
     "params": [
       {
         "key": "color",
@@ -981,6 +1325,8 @@
     "name": "Hover star sparkles",
     "category": "hover",
     "target": "element",
+    "textMask": true,
+    "layerOpacity": true,
     "params": [
       {
         "key": "a",
@@ -1009,6 +1355,15 @@
         "max": 120,
         "step": 4,
         "unit": "px"
+      },
+      {
+        "key": "opacity",
+        "label": "Opacity",
+        "type": "number",
+        "default": 1,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.05
       }
     ],
     "respectsReducedMotion": true,
@@ -1054,6 +1409,7 @@
     "name": "Location ping ripple",
     "category": "loop",
     "target": "element",
+    "layerOpacity": true,
     "alsoIn": {
       "hover": {
         "trigger": "hover"
@@ -1125,6 +1481,15 @@
         "max": 8000,
         "step": 100,
         "unit": "ms"
+      },
+      {
+        "key": "opacity",
+        "label": "Opacity",
+        "type": "number",
+        "default": 1,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.05
       }
     ],
     "respectsReducedMotion": true,
@@ -1137,6 +1502,7 @@
     "name": "Neon ripple",
     "category": "click",
     "target": "element",
+    "layerOpacity": true,
     "alsoIn": {
       "hover": {
         "trigger": "hover"
@@ -1217,6 +1583,15 @@
         "max": 4000,
         "step": 50,
         "unit": "ms"
+      },
+      {
+        "key": "opacity",
+        "label": "Opacity",
+        "type": "number",
+        "default": 1,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.05
       }
     ],
     "respectsReducedMotion": true,
@@ -1229,6 +1604,7 @@
     "name": "Particle burst (click)",
     "category": "click",
     "target": "element",
+    "layerOpacity": true,
     "params": [
       {
         "key": "count",
@@ -1269,6 +1645,15 @@
           "pastel",
           "gold"
         ]
+      },
+      {
+        "key": "opacity",
+        "label": "Opacity",
+        "type": "number",
+        "default": 1,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.05
       }
     ],
     "respectsReducedMotion": true,
@@ -1311,6 +1696,8 @@
     "name": "Parallax pixel stars",
     "category": "background",
     "target": "background",
+    "textMask": true,
+    "layerOpacity": true,
     "alsoIn": {
       "loop": {}
     },
@@ -1356,6 +1743,15 @@
         "label": "Night sky behind",
         "type": "boolean",
         "default": true
+      },
+      {
+        "key": "opacity",
+        "label": "Opacity",
+        "type": "number",
+        "default": 1,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.05
       },
       {
         "key": "seed",
@@ -1410,6 +1806,8 @@
     "name": "Rising light particles",
     "category": "background",
     "target": "background",
+    "textMask": true,
+    "layerOpacity": true,
     "alsoIn": {
       "loop": {}
     },
@@ -1469,6 +1867,15 @@
         "label": "Fill color",
         "type": "color",
         "default": "#021027"
+      },
+      {
+        "key": "opacity",
+        "label": "Opacity",
+        "type": "number",
+        "default": 1,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.05
       },
       {
         "key": "seed",
@@ -1564,6 +1971,7 @@
     "name": "Shimmer",
     "category": "loop",
     "target": "element",
+    "textMask": true,
     "params": [
       {
         "key": "trigger",
@@ -1616,6 +2024,8 @@
     "name": "Shooting stars background",
     "category": "background",
     "target": "background",
+    "textMask": true,
+    "layerOpacity": true,
     "params": [
       {
         "key": "head",
@@ -1654,6 +2064,15 @@
         "max": 8000,
         "step": 100,
         "unit": "ms"
+      },
+      {
+        "key": "opacity",
+        "label": "Opacity",
+        "type": "number",
+        "default": 1,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.05
       }
     ],
     "respectsReducedMotion": true,
@@ -1709,6 +2128,8 @@
     "name": "Star sparkle field",
     "category": "background",
     "target": "background",
+    "textMask": true,
+    "layerOpacity": true,
     "params": [
       {
         "key": "palette",
@@ -1773,6 +2194,15 @@
         "max": 240,
         "step": 8,
         "unit": "px"
+      },
+      {
+        "key": "opacity",
+        "label": "Opacity",
+        "type": "number",
+        "default": 1,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.05
       }
     ],
     "respectsReducedMotion": true,
@@ -1782,10 +2212,110 @@
     }
   },
   {
+    "id": "text-echo",
+    "name": "Blurred text echo",
+    "category": "loop",
+    "target": "element",
+    "layerOpacity": true,
+    "alsoIn": {
+      "hover": {
+        "trigger": "hover"
+      }
+    },
+    "params": [
+      {
+        "key": "trigger",
+        "label": "Show",
+        "type": "select",
+        "default": "always",
+        "options": [
+          "always",
+          "hover"
+        ]
+      },
+      {
+        "key": "color",
+        "label": "Echo color",
+        "type": "color",
+        "default": "currentcolor"
+      },
+      {
+        "key": "blur",
+        "label": "Blur",
+        "type": "number",
+        "default": 8,
+        "min": 0,
+        "max": 40,
+        "step": 1,
+        "unit": "px"
+      },
+      {
+        "key": "scale",
+        "label": "Scale",
+        "type": "number",
+        "default": 1.04,
+        "min": 0.8,
+        "max": 1.6,
+        "step": 0.01
+      },
+      {
+        "key": "x",
+        "label": "Offset x",
+        "type": "number",
+        "default": 0,
+        "min": -40,
+        "max": 40,
+        "step": 1,
+        "unit": "px"
+      },
+      {
+        "key": "y",
+        "label": "Offset y",
+        "type": "number",
+        "default": 0,
+        "min": -40,
+        "max": 40,
+        "step": 1,
+        "unit": "px"
+      },
+      {
+        "key": "pulse",
+        "label": "Pulse",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "duration",
+        "label": "Pulse time",
+        "type": "number",
+        "default": 3000,
+        "min": 500,
+        "max": 10000,
+        "step": 100,
+        "unit": "ms"
+      },
+      {
+        "key": "opacity",
+        "label": "Opacity",
+        "type": "number",
+        "default": 0.8,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.05
+      }
+    ],
+    "respectsReducedMotion": true,
+    "origin": {
+      "builtin": true
+    }
+  },
+  {
     "id": "twinkle-background",
     "name": "Twinkling sparkles background",
     "category": "background",
     "target": "background",
+    "textMask": true,
+    "layerOpacity": true,
     "params": [
       {
         "key": "color",
@@ -1807,6 +2337,15 @@
         "label": "Floating emojis",
         "type": "text",
         "default": ""
+      },
+      {
+        "key": "opacity",
+        "label": "Opacity",
+        "type": "number",
+        "default": 1,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.05
       }
     ],
     "respectsReducedMotion": true,

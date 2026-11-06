@@ -27,6 +27,8 @@ function run(el, params) {
       p.style.setProperty('--dy', Math.sin(angle) * dist + 'px')
       p.style.width = p.style.height = (params.size ?? 12) + 'px'
       p.style.backgroundColor = colors[i % colors.length]
+      // filter: opacity() so the shared Opacity param composes with the burst's own fade.
+      p.style.filter = 'opacity(var(--fp-fx-opacity-particle-burst, 1))'
       p.style.left = x + 'px'
       p.style.top = y + 'px'
       el.append(p)

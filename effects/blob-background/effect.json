@@ -3,6 +3,7 @@
   "name": "Floating blobs background",
   "category": "background",
   "target": "background",
+  "textMask": true,
   "params": [
     {
       "key": "palette",

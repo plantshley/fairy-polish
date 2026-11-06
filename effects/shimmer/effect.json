@@ -3,6 +3,7 @@
   "name": "Shimmer",
   "category": "loop",
   "target": "element",
+  "textMask": true,
   "params": [
     {
       "key": "trigger",

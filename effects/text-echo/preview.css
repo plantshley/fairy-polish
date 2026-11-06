@@ -1,0 +1,12 @@
+/* A copy of the text, blurred, behind the real text. The layer inherits the
+   element's padding and text styles so the copy lines up. */
+[data-fp-layer="text-echo"] { box-sizing: border-box; padding: inherit; font: inherit; letter-spacing: inherit; text-align: inherit; text-transform: inherit; line-height: inherit;
+  white-space: inherit; display: flex; flex-direction: inherit; align-items: inherit; justify-content: inherit; }
+[data-fp-echo] { display: block; width: 100%; color: var(--fp-text-echo-color); -webkit-text-fill-color: var(--fp-text-echo-color); background: none; text-shadow: none;
+  filter: blur(var(--fp-text-echo-blur)); transform: translate(var(--fp-text-echo-x), var(--fp-text-echo-y)) scale(var(--fp-text-echo-scale)); font-style: inherit; transition: opacity 0.3s ease; }
+[data-fp-echo-sharp] { display: block; width: 100%; font-style: inherit; }
+[data-fp-echo-pulse] [data-fp-echo] { animation: fp-echo-pulse var(--fp-text-echo-duration) ease-in-out infinite alternate; }
+@keyframes fp-echo-pulse { from { filter: blur(calc(var(--fp-text-echo-blur) * 0.5)); opacity: 0.6; } to { filter: blur(var(--fp-text-echo-blur)); opacity: 1; } }
+[data-fp-echo-hover] [data-fp-echo] { opacity: 0; }
+[data-fp-fx~="text-echo"]:hover [data-fp-echo-hover] [data-fp-echo], [data-fp-fx~="text-echo"][data-fp-demo] [data-fp-echo-hover] [data-fp-echo] { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { [data-fp-echo] { animation: none !important; } }

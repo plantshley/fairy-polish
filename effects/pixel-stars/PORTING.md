@@ -19,6 +19,7 @@ Original (Sass): three empty boxes, `#stars` (1px), `#stars2` (2px), and `#stars
 - `direction` (Drift): `up`, `down`, `left`, or `right`, default `up`
 - `sky` (Night sky behind): boolean, default `true`. The original's radial gradient.
 - `seed` (Layout seed): only for the preview's random layout.
+- `opacity` (Opacity): number from 0 to 1, default `1`. The whole effect's opacity: set it on the effect's own layer, not the element, so the element's content stays opaque.
 
 ## Reduced motion
 

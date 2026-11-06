@@ -30,6 +30,7 @@ Concentric rings expand from the element's center and fade, staggered so one is 
 - `fill` (Filled rings): boolean, default `false`. Fills rings with the color at 25% alpha.
 - `pin` (Center dot): boolean, default `false`
 - `duration` (Duration): ms, default `2400`
+- `opacity` (Opacity): number from 0 to 1, default `1`. The whole effect's opacity: set it on the effect's own layer, not the element, so the element's content stays opaque.
 
 ## Reduced motion
 

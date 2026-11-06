@@ -32,6 +32,7 @@ Triggers: `click` uses `pointerdown` at the pointer; `hover` uses `pointerenter`
 - `width` (Ring width): px, default `2`
 - `clip` (Stay inside): boolean, default `false`. Clips the rings to the element.
 - `duration` (Duration): ms, default `900`
+- `opacity` (Opacity): number from 0 to 1, default `1`. The whole effect's opacity: set it on the effect's own layer, not the element, so the element's content stays opaque.
 
 ## Reduced motion
 

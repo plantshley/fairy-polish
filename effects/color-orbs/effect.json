@@ -3,17 +3,89 @@
   "name": "Floating color orbs",
   "category": "background",
   "target": "background",
-  "alsoIn": { "loop": {} },
+  "textMask": true,
+  "layerOpacity": true,
+  "alsoIn": {
+    "loop": {}
+  },
   "params": [
-    { "key": "palette", "label": "Colors", "type": "palette", "default": "spectrum" },
-    { "key": "count", "label": "Orbs per layer", "type": "number", "default": 40, "min": 3, "max": 80, "step": 1 },
-    { "key": "blur", "label": "Blur", "type": "number", "default": 7, "min": 0, "max": 20, "step": 0.5, "unit": "px" },
-    { "key": "scale", "label": "Spread", "type": "number", "default": 1, "min": 0.3, "max": 2, "step": 0.05 },
-    { "key": "speed", "label": "Speed", "type": "number", "default": 1, "min": 0.1, "max": 5, "step": 0.1 },
-    { "key": "backdrop", "label": "Fill behind", "type": "boolean", "default": true },
-    { "key": "backdropColor", "label": "Fill color", "type": "color", "default": "#112233" },
-    { "key": "seed", "label": "Layout seed", "type": "number", "default": 1, "min": 1, "max": 50, "step": 1 }
+    {
+      "key": "palette",
+      "label": "Colors",
+      "type": "palette",
+      "default": "spectrum"
+    },
+    {
+      "key": "count",
+      "label": "Orbs per layer",
+      "type": "number",
+      "default": 40,
+      "min": 3,
+      "max": 80,
+      "step": 1
+    },
+    {
+      "key": "blur",
+      "label": "Blur",
+      "type": "number",
+      "default": 7,
+      "min": 0,
+      "max": 20,
+      "step": 0.5,
+      "unit": "px"
+    },
+    {
+      "key": "scale",
+      "label": "Spread",
+      "type": "number",
+      "default": 1,
+      "min": 0.3,
+      "max": 2,
+      "step": 0.05
+    },
+    {
+      "key": "speed",
+      "label": "Speed",
+      "type": "number",
+      "default": 1,
+      "min": 0.1,
+      "max": 5,
+      "step": 0.1
+    },
+    {
+      "key": "backdrop",
+      "label": "Fill behind",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "backdropColor",
+      "label": "Fill color",
+      "type": "color",
+      "default": "#112233"
+    },
+    {
+      "key": "opacity",
+      "label": "Opacity",
+      "type": "number",
+      "default": 1,
+      "min": 0.05,
+      "max": 1,
+      "step": 0.05
+    },
+    {
+      "key": "seed",
+      "label": "Layout seed",
+      "type": "number",
+      "default": 1,
+      "min": 1,
+      "max": 50,
+      "step": 1
+    }
   ],
   "respectsReducedMotion": true,
-  "origin": { "url": "https://codepen.io/hylobates-lar/pen/bGEQXgm", "license": "MIT (CodePen public pen), hylobates-lar" }
+  "origin": {
+    "url": "https://codepen.io/hylobates-lar/pen/bGEQXgm",
+    "license": "MIT (CodePen public pen), hylobates-lar"
+  }
 }

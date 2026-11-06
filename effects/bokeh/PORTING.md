@@ -23,6 +23,7 @@ In a component, generate the per-light values once (in JS with a fixed list, or 
 - `speed` (Speed): number, default `1`. Divides the durations.
 - `backdrop` (Fill behind): boolean, default `true`; `backdropColor` (Fill color), default `#3E1E68`
 - `seed` (Layout seed): only for the preview's random layout.
+- `opacity` (Opacity): number from 0 to 1, default `1`. The whole effect's opacity: set it on the effect's own layer, not the element, so the element's content stays opaque.
 
 ## Reduced motion
 

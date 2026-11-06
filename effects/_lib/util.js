@@ -47,7 +47,9 @@ export function layer(el, id, { clip = true, bleed = 0, z = 0, behind = false } 
   const d = el.ownerDocument.createElement('span')
   d.setAttribute('data-fp-layer', id)
   d.setAttribute('aria-hidden', 'true')
-  d.style.cssText = `position:absolute;inset:${-bleed}px;pointer-events:none;border-radius:inherit;z-index:${behind ? -1 : z};${clip ? 'overflow:hidden;' : ''}`
+  // --fp-fx-opacity-<id> is the shared Opacity param (effects with
+  // "layerOpacity": true in effect.json); the loader sets it on el.
+  d.style.cssText = `position:absolute;inset:${-bleed}px;pointer-events:none;border-radius:inherit;z-index:${behind ? -1 : z};opacity:var(--fp-fx-opacity-${id},1);${clip ? 'overflow:hidden;' : ''}`
   if (behind) {
     const prev = el.style.isolation
     el.style.isolation = 'isolate'

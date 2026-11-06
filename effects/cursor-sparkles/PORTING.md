@@ -14,6 +14,7 @@ Original: fairy-shop `src/components/CursorSparkles.jsx`, a dependency-free canv
 - `b` (Color 2): color, default `#b89bff`
 - `c` (Color 3): color, default `#ffd86b`
 - `pastel` (Random pastels instead): boolean, default `false`
+- `opacity` (Opacity): number from 0 to 1, default `1`. The whole effect's opacity: set it on the effect's own layer (the canvas), not the element, so the element's content stays opaque.
 
 The change file gives the values the user chose. Map colors to the project's existing tokens when one matches.
 

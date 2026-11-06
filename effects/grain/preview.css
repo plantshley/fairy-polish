@@ -1,0 +1,15 @@
+/* The grain tile is oversized and shifted in steps when animated, so the
+   noise flickers like film grain instead of sliding. */
+[data-fp-grain] { position: absolute; inset: -50%; font-style: normal; pointer-events: none; }
+[data-fp-grain-move] [data-fp-grain] { animation: fp-grain 0.8s steps(1) infinite; }
+@keyframes fp-grain {
+  0% { transform: translate(0, 0); }
+  12% { transform: translate(-5%, -10%); }
+  25% { transform: translate(-15%, 5%); }
+  37% { transform: translate(7%, -25%); }
+  50% { transform: translate(-5%, 25%); }
+  62% { transform: translate(-15%, 10%); }
+  75% { transform: translate(15%, 0%); }
+  87% { transform: translate(0%, 15%); }
+}
+@media (prefers-reduced-motion: reduce) { [data-fp-grain] { animation: none !important; } }

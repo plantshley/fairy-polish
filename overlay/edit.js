@@ -190,7 +190,7 @@ const SECTION_PROPS = {
   Type: (p, c) => /^(font-|line-height|letter-spacing|color$|text-align|text-transform|text-decoration|-webkit-text-fill-color)/.test(p) || (isTextClip(c) && /^(-webkit-)?background-(image|clip)$/.test(p)),
   Fill: (p, c) => p === 'background-color' || p === 'opacity' || (p === 'background-image' && !isTextClip(c) && !isBorderGrad(c)),
   Border: (p, c) => /^border/.test(p) || (isBorderGrad(c) && /^background-(image|clip|origin)$/.test(p)),
-  'Shadow & filter': IN(['box-shadow', 'text-shadow', 'filter']),
+  'Shadow & filter': IN(['box-shadow', 'text-shadow', 'filter', 'backdrop-filter']),
 }
 
 // A reset for one Edit section on el: undoes what that section shows, for
@@ -220,11 +220,17 @@ export function sectionReset(el, section) {
     if (!match) return null
     hit = (c) => sameBucket(c) && (c.target.part || null) === (t.part || null) && !c.target.pseudo && !c.target.state
   }
+  // Shadow & filter also owns the background filter, which is an effect.
+  const bgFilter = (c) => section === 'Shadow & filter' && c.type === 'effect' && c.effect === 'background-filter' && c.target.fpId === fp
   const touches = (c) => c.type === 'keyframes' || Object.keys(c.props).some((p) => match(p, c))
-  if (!getChanges().some((c) => hit(c) && touches(c))) return null
+  if (!getChanges().some((c) => (hit(c) && touches(c)) || bgFilter(c))) return null
   return () => commit((changes) => {
     for (let i = changes.length - 1; i >= 0; i--) {
       const c = changes[i]
+      if (bgFilter(c)) {
+        changes.splice(i, 1)
+        continue
+      }
       if (!hit(c)) continue
       if (c.type === 'keyframes') {
         changes.splice(i, 1)

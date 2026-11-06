@@ -21,6 +21,7 @@ In a project, use four absolutely positioned elements (or two elements and their
 - `speed` (Speed): number, default `1`. Divides the 41 to 44s turns.
 - `backdrop` (Fill behind): boolean, default `true`; `backdropColor` (Fill color), default `#112233`. Screen blending needs a dark background to read.
 - `seed` (Layout seed): only for the preview's random layout.
+- `opacity` (Opacity): number from 0 to 1, default `1`. The whole effect's opacity: set it on the effect's own layer, not the element, so the element's content stays opaque.
 
 ## Reduced motion
 

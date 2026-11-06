@@ -13,6 +13,7 @@ Original: fairy-shop `src/components/AnimatedBackground.jsx` (framer-motion). 30
 - `color` (Sparkle color): color, default `#ffd1f0`
 - `count` (Sparkles): number, default `30`
 - `emojis` (Floating emojis): text, default ``
+- `opacity` (Opacity): number from 0 to 1, default `1`. The whole effect's opacity: set it on the effect's own layer, not the element, so the element's content stays opaque.
 
 The change file gives the values the user chose. Map colors to the project's existing tokens when one matches.
 

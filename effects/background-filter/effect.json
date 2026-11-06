@@ -1,0 +1,12 @@
+{
+  "id": "background-filter",
+  "name": "Filter the background only",
+  "category": "background",
+  "target": "background",
+  "params": [
+    { "key": "filter", "label": "Filter", "type": "text", "default": "blur(6px)" },
+    { "key": "edges", "label": "Edges", "type": "select", "default": "soft", "options": ["soft", "clipped"] }
+  ],
+  "respectsReducedMotion": true,
+  "origin": { "builtin": true }
+}

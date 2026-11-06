@@ -3,6 +3,7 @@
   "name": "Button shine sweep",
   "category": "hover",
   "target": "element",
+  "textMask": true,
   "params": [
     {
       "key": "color",

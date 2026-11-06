@@ -1,7 +1,7 @@
 [data-fp-firefly] { position: absolute; left: 50%; top: 50%; width: var(--fp-fireflies-size); height: var(--fp-fireflies-size); margin: calc(var(--fp-fireflies-size) / -2) 0 0 calc(-1 * var(--orbit)); }
 [data-fp-firefly]::before, [data-fp-firefly]::after { content: ""; position: absolute; width: 100%; height: 100%; border-radius: 50%; transform-origin: var(--orbit); }
-[data-fp-firefly]::before { background: black; opacity: 0.4; animation: fp-firefly-drift var(--spin) ease alternate infinite; }
-[data-fp-firefly]::after { background: white; opacity: 0; box-shadow: 0 0 0 0 var(--fp-fireflies-color); animation: fp-firefly-drift var(--spin) ease alternate infinite, fp-firefly-flash var(--flash) ease var(--flash-delay) infinite; }
+[data-fp-firefly]::before { background: var(--fp-fireflies-body); animation: fp-firefly-drift var(--spin) ease alternate infinite; }
+[data-fp-firefly]::after { background: var(--fp-fireflies-core); opacity: 0; box-shadow: 0 0 0 0 var(--fp-fireflies-color); animation: fp-firefly-drift var(--spin) ease alternate infinite, fp-firefly-flash var(--flash) ease var(--flash-delay) infinite; }
 @keyframes fp-firefly-drift { to { transform: rotate(360deg); } }
 @keyframes fp-firefly-flash {
   0%, 30%, 100% { opacity: 0; box-shadow: 0 0 0 0 var(--fp-fireflies-color); }
