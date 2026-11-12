@@ -254,6 +254,43 @@ export function joinAlpha(base, a) {
 // The swatch. Clicking it opens a popover with the native picker, a hex
 // field, opacity, the eyedropper, and the page's tokens and colors.
 // onInput fires while dragging, onChange once a pick settles.
+// A slider with its number beside it. Click the number to type a value
+// (the unit is optional); typed values may go past the slider's range.
+export function slider({ min = 0, max = 100, step = 1, value, unit = '', digits = 2, onInput, onChange }) {
+  const fmt = (v) => `${+Number(v).toFixed(digits)}${unit}`
+  const range = h('input', { class: 'fp-in', type: 'range', min, max, step, value })
+  const num = h('input', { class: 'fp-in fp-num', value: fmt(value), spellcheck: 'false', title: 'Type a value' })
+  range.addEventListener('input', () => {
+    num.value = fmt(range.value)
+    onInput?.(parseFloat(range.value))
+  })
+  range.addEventListener('change', () => onChange?.(parseFloat(range.value)))
+  const commit = () => {
+    const v = parseFloat(num.value)
+    if (!Number.isFinite(v)) return (num.value = fmt(range.value))
+    range.value = v
+    num.value = fmt(v)
+    onInput?.(v)
+    onChange?.(v)
+  }
+  num.addEventListener('focus', () => num.select())
+  num.addEventListener('change', commit)
+  num.addEventListener('keydown', (e) => {
+    e.stopPropagation()
+    if (e.key === 'Enter') num.blur()
+    if (e.key === 'Escape') {
+      num.value = fmt(range.value)
+      num.blur()
+    }
+  })
+  const row = h('div', { class: 'fp-row fp-slider', style: { flexWrap: 'nowrap' } }, range, num)
+  row.set = (v) => {
+    range.value = v
+    num.value = fmt(v)
+  }
+  return row
+}
+
 export function swatch(value, onInput, { onChange } = {}) {
   const chip = h('i', { style: { background: value } })
   const sw = h('button', { class: 'fp-sw', type: 'button', title: String(value ?? '') }, chip)
@@ -292,8 +329,7 @@ function openColorPop(anchor, value, set) {
   const out = () => joinAlpha(base, a)
   const native = h('input', { type: 'color', value: toHex(resolveHex(base, root)) })
   const hex = h('input', { class: 'fp-in', value: base, spellcheck: 'false' })
-  const range = h('input', { class: 'fp-in', type: 'range', min: 0, max: 100, step: 1, value: Math.round(a * 100) })
-  const pct = h('span', { class: 'fp-kbd' }, Math.round(a * 100) + '%')
+  const op = slider({ max: 100, value: Math.round(a * 100), unit: '%', digits: 0, onInput: (v) => { a = Math.max(0, Math.min(100, v)) / 100; set(out()) }, onChange: () => set(out(), true) })
   native.addEventListener('input', () => { base = native.value; hex.value = base; set(out()) })
   native.addEventListener('change', () => set(out(), true))
   hex.addEventListener('keydown', (e) => e.stopPropagation())
@@ -302,12 +338,9 @@ function openColorPop(anchor, value, set) {
     if (!CSS.supports('color', v)) return
     ;({ base, a } = (() => { const s = splitAlpha(v); return { base: s.base, a: s.a < 1 ? s.a : a } })())
     native.value = toHex(resolveHex(base, root))
-    range.value = Math.round(a * 100)
-    pct.textContent = range.value + '%'
+    op.set(Math.round(a * 100))
     set(out(), true)
   })
-  range.addEventListener('input', () => { a = +range.value / 100; pct.textContent = range.value + '%'; set(out()) })
-  range.addEventListener('change', () => set(out(), true))
   const pick = (v) => {
     base = v
     hex.value = v
@@ -320,7 +353,7 @@ function openColorPop(anchor, value, set) {
   const { tokens = [], swatches = [] } = colorSources() || {}
   const el = h('div', { class: 'fp-cpop' },
     h('div', { class: 'fp-row', style: { flexWrap: 'nowrap' } }, h('span', { class: 'fp-cpop-native' }, native), hex, dropper),
-    h('div', { class: 'fp-row', style: { flexWrap: 'nowrap' } }, h('span', { class: 'fp-kbd' }, 'opacity'), range, pct),
+    h('div', { class: 'fp-row', style: { flexWrap: 'nowrap' } }, h('span', { class: 'fp-kbd' }, 'opacity'), op),
     tokens.length ? h('div', { class: 'fp-kbd' }, 'tokens') : null,
     tokens.length ? h('div', { class: 'fp-swatches' }, tokens.map((t) => h('button', { class: 'fp-sw', type: 'button', title: `var(${t.name})  ${t.value}`, onClick: () => pick(`var(${t.name})`) }, h('i', { style: { background: t.value } })))) : null,
     swatches.length ? h('div', { class: 'fp-kbd' }, 'on page') : null,
@@ -357,18 +390,14 @@ function resolveHex(c, root) {
   return toHex(rgb)
 }
 
-// The "page colors and tokens" button: a little 2×2 swatch grid.
-function paletteIcon() {
-  return h('span', { class: 'fp-palicon' }, h('i'), h('i'), h('i'), h('i'))
-}
-
-// Color: swatch (native picker), text input, eyedropper, and the page's
-// colors and tokens.
-export function colorField(name, value, onSet, { key, overridden, token, mirrored, swatches = [], tokens = [] } = {}) {
+// Color: swatch (opens the color popover, which has the page's colors and
+// tokens), text input, and eyedropper.
+export function colorField(name, value, onSet, { key, overridden, token, mirrored } = {}) {
   const input = textInput(token ? `var(${token})` : value, (v) => onSet(v, {}), { key })
   const sw = swatch(value, (v) => {
     input.value = v
-    onSet(v, { mergeKey: 'picker:' + key })
+    const t = /^var\((--[\w-]+)\)$/.exec(v)
+    onSet(v, { mergeKey: 'picker:' + key, ...(t ? { token: t[1] } : {}) })
   })
   const chip = sw.firstChild
   const dropper =
@@ -386,34 +415,10 @@ export function colorField(name, value, onSet, { key, overridden, token, mirrore
           },
         }, '⌖')
       : null
-  let pal = null
-  const palBtn = h('button', {
-    class: 'fp-icon',
-    title: 'Colors and tokens this page already uses',
-    onClick: () => {
-      if (pal) {
-        pal.remove()
-        pal = null
-        return
-      }
-      pal = h(
-        'div',
-        { class: 'fp-swatches', style: { gridColumn: '1 / -1' } },
-        tokens.length ? h('span', { class: 'fp-kbd' }, 'tokens') : null,
-        tokens.map((t) =>
-          h('button', { class: 'fp-sw', title: `var(${t.name})  ${t.value}`, onClick: () => onSet(`var(${t.name})`, { token: t.name }) }, h('i', { style: { background: t.value } })),
-        ),
-        swatches.length && tokens.length ? h('span', { class: 'fp-sep' }) : null,
-        swatches.length ? h('span', { class: 'fp-kbd' }, 'on page') : null,
-        swatches.map((c) => h('button', { class: 'fp-sw', title: c, onClick: () => onSet(c, {}) }, h('i', { style: { background: c } }))),
-      )
-      wrap.append(pal)
-    },
-  }, paletteIcon())
   const lab = label(name, { overridden })
-  const wrap = h('div', { class: 'fp-field' }, lab, h('div', { class: 'fp-color' }, sw, input, dropper, palBtn))
+  const wrap = h('div', { class: 'fp-field' }, lab, h('div', { class: 'fp-color' }, sw, input, dropper))
   if (token) lab.title = `${name} (token ${token})`
-  if (mirrored) wrap.lastChild.insertBefore(h('span', { class: 'fp-badge mir', title: 'Generated from your edit in the other theme. Edit to pin it.' }, 'mirrored'), dropper || palBtn)
+  if (mirrored) wrap.lastChild.insertBefore(h('span', { class: 'fp-badge mir', title: 'Generated from your edit in the other theme. Edit to pin it.' }, 'mirrored'), dropper)
   return wrap
 }
 

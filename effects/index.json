@@ -30,6 +30,16 @@
         "max": 40000,
         "step": 500,
         "unit": "ms"
+      },
+      {
+        "key": "size",
+        "label": "Gradient size",
+        "type": "number",
+        "default": 400,
+        "min": 150,
+        "max": 800,
+        "step": 25,
+        "unit": "%"
       }
     ],
     "respectsReducedMotion": true,

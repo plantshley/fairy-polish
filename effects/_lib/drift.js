@@ -2,7 +2,8 @@
 // games hub's and check-in's animateParticle(). Each cycle: put the speck at
 // a random spot at opacity 0, wait up to `wait` seconds, then over `dur`
 // seconds fade it to a random opacity in `peak` while it moves up to `rise`%
-// up and `sway`% sideways. Returns a stop function.
+// up and `sway`% sideways. The first cycle starts at a random point, so the
+// specks are visible as soon as the effect is applied. Returns a stop function.
 export function drift(l, { count, size, color, glow, dur, wait = 5, peak, rise, sway, speed = 1 }) {
   const doc = l.ownerDocument
   const timers = new Set()
@@ -15,7 +16,7 @@ export function drift(l, { count, size, color, glow, dur, wait = 5, peak, rise, 
     }, ms)
     timers.add(t)
   }
-  const cycle = (p) => {
+  const cycle = (p, first) => {
     if (!alive) return
     p.style.left = Math.random() * 100 + '%'
     p.style.top = Math.random() * 100 + '%'
@@ -30,12 +31,13 @@ export function drift(l, { count, size, color, glow, dur, wait = 5, peak, rise, 
         { opacity: 0, transform: 'translate(0, 0)' },
         { opacity: to, transform: `translate(${(dx * box.width) / 100}px, ${(dy * box.height) / 100}px)` },
       ], { duration: ms, easing: 'linear' })
+      if (first) a.currentTime = Math.random() * ms
       anims.add(a)
       a.onfinish = () => {
         anims.delete(a)
         cycle(p)
       }
-    }, Math.random() * wait * 1000 * speed)
+    }, first ? 0 : Math.random() * wait * 1000 * speed)
   }
   for (let i = 0; i < Math.round(count); i++) {
     const p = doc.createElement('i')
@@ -43,7 +45,7 @@ export function drift(l, { count, size, color, glow, dur, wait = 5, peak, rise, 
     const s = size[0] + Math.random() * (size[1] - size[0])
     p.style.cssText = `position:absolute;border-radius:50%;opacity:0;font-style:normal;width:${s}px;height:${s}px;background:${color};${glow ? `box-shadow:${glow};` : ''}`
     l.append(p)
-    cycle(p)
+    cycle(p, true)
   }
   return () => {
     alive = false

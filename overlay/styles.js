@@ -137,6 +137,13 @@ textarea.fp-in { resize: vertical; min-height: 42px; }
 .fp-quad-l { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; font-size: 8px; color: var(--fp-muted); text-align: center; }
 
 .fp-color { display: flex; gap: 3px; align-items: center; }
+.fp-slider .fp-num { width: 52px; flex: none; text-align: right; padding-left: 2px; padding-right: 2px; }
+.fp-search { position: relative; }
+.fp-search .fp-in { padding-right: 18px; }
+.fp-search-x { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; padding: 0; border: 0; border-radius: 50%;
+  background: var(--fp-line); color: var(--fp-ink); font: inherit; font-size: 11px; line-height: 15px; cursor: pointer; }
+.fp-search-x:hover { background: var(--fp-accent); color: #fff; }
+.fp-search-x[hidden] { display: none; }
 .fp-sw { width: 18px; height: 18px; border-radius: 3px; border: 1px solid var(--fp-line); flex: none; cursor: pointer; padding: 0;
   background-image: linear-gradient(45deg,#ccc 25%,transparent 25%,transparent 75%,#ccc 75%),linear-gradient(45deg,#ccc 25%,transparent 25%,transparent 75%,#ccc 75%);
   background-size: 6px 6px; background-position: 0 0, 3px 3px; position: relative; overflow: hidden; }
@@ -210,10 +217,6 @@ textarea.fp-in { resize: vertical; min-height: 42px; }
 .fp-seg button + button { border-left: 1px solid var(--fp-line); }
 .fp-seg button.on { background: var(--fp-accent); color: var(--fp-accent-ink); }
 .fp-seg button:disabled { opacity: .4; cursor: default; }
-.fp-palicon { display: grid; grid-template-columns: 5px 5px; gap: 1px; }
-.fp-palicon i { width: 5px; height: 5px; border-radius: 1px; }
-.fp-palicon i:nth-child(1) { background: #f472b6; } .fp-palicon i:nth-child(2) { background: #a78bfa; }
-.fp-palicon i:nth-child(3) { background: #60a5fa; } .fp-palicon i:nth-child(4) { background: #fbbf24; }
 .fp-colors { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 .fp-colors-item { display: inline-flex; align-items: center; gap: 1px; }
 .fp-x { border: 0; background: none; color: var(--fp-muted); cursor: pointer; font-size: 8px; padding: 0 2px; }

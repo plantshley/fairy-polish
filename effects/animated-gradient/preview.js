@@ -10,5 +10,5 @@ function run(el, params) {
   // Older change files carry three colors as a, b, c.
   const colors = params.a ? [params.a, params.b, params.c].filter(Boolean) : colorsOf(params.palette, 'pastel')
   const image = `linear-gradient(${params.angle ?? 135}deg, ${[...colors, colors[0]].join(', ')})`
-  return all(tag(el, id), vars(el, id, { image, duration: params.duration }, { duration: 'ms' }))
+  return all(tag(el, id), vars(el, id, { image, duration: params.duration, size: params.size ?? 400 }, { duration: 'ms', size: '%' }))
 }

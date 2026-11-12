@@ -474,7 +474,6 @@ function renderEdit() {
     const v = valueFor(el, prop)
     return colorField(label, v.value, (val, o) => setStyle(el, prop, val, o), {
       key: prop, overridden: v.overridden, token: v.token, mirrored: v.mirrored,
-      swatches: pageColorCache.colors, tokens: state.tokens.colors,
     })
   }
   const Q = (label, prefix) => {
@@ -626,7 +625,6 @@ function textColor(el) {
   }
   return colorField('color', v.value, (val, o) => (pinned() ? setStyles(el, { color: val, '-webkit-text-fill-color': 'currentcolor' }, o) : setStyle(el, 'color', val, o)), {
     key: 'color', overridden: v.overridden, token: v.token, mirrored: v.mirrored,
-    swatches: pageColorCache.colors, tokens: state.tokens.colors,
   })
 }
 

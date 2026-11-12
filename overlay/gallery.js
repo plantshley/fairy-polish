@@ -7,7 +7,7 @@ import { loadCatalog, loadEffect, defaultsFor, effectMeta, loadPalettes } from '
 import { addEffect, updateEffect } from './edit.js'
 import { getChanges, removeChange } from './store.js'
 import { state } from './state.js'
-import { dropdown, segmented, colorList, swatch } from './controls.js'
+import { dropdown, segmented, colorList, swatch, slider } from './controls.js'
 import { hasOwnText, wrapText, runOn } from './preview.js'
 
 const CATS = ['all', 'hover', 'click', 'entrance', 'loop', 'background', 'cursor']
@@ -45,9 +45,16 @@ export function renderGallery(body, el) {
   const cats = h('div', { class: 'fp-cats' }, CATS.map((c) =>
     h('button', { class: 'fp-btn' + (c === cat ? ' on' : ''), onClick: () => { cat = c; renderGallery(clear(body), el) } }, c)))
   const grid = h('div', { class: 'fp-grid' })
-  const search = h('input', { class: 'fp-in', type: 'search', placeholder: 'Search effects: name, setting, or source (sparkle, color, games hub)', value: query, spellcheck: 'false' })
-  search.addEventListener('keydown', (e) => e.stopPropagation())
-  body.append(head, part, search, cats, grid)
+  const search = h('input', { class: 'fp-in', type: 'text', placeholder: 'Search effects: name, setting, or source (sparkle, color, games hub)', value: query, spellcheck: 'false' })
+  const x = h('button', { class: 'fp-search-x', type: 'button', title: 'Clear search', hidden: !query }, '×')
+  search.addEventListener('keydown', (e) => {
+    e.stopPropagation()
+    if (e.key === 'Escape' && search.value) {
+      e.preventDefault()
+      x.click()
+    }
+  })
+  body.append(head, part, h('div', { class: 'fp-search' }, search, x), cats, grid)
   loadCatalog().then((list) => {
     const draw = () => {
       stopThumbs()
@@ -61,6 +68,13 @@ export function renderGallery(body, el) {
     }
     search.addEventListener('input', () => {
       query = search.value
+      x.hidden = !query
+      draw()
+    })
+    x.addEventListener('click', () => {
+      search.value = query = ''
+      x.hidden = true
+      search.focus()
       draw()
     })
     draw()
@@ -211,19 +225,9 @@ function paramField(c, p) {
   } else if (p.type === 'palette') {
     return paletteField(p, v, set)
   } else {
-    const range = h('input', { class: 'fp-in', type: 'range', min: p.min ?? 0, max: p.max ?? 100, step: p.step ?? 1, value: v })
-    const out = h('span', { class: 'fp-kbd', style: { minWidth: '38px', textAlign: 'right' } }, fmt(v, p))
-    range.addEventListener('input', () => {
-      out.textContent = fmt(parseFloat(range.value), p)
-      set(parseFloat(range.value))
-    })
-    input = h('div', { class: 'fp-row', style: { flexWrap: 'nowrap' } }, range, out)
+    input = slider({ min: p.min ?? 0, max: p.max ?? 100, step: p.step ?? 1, value: v, unit: p.unit || '', onInput: set })
   }
   return h('div', { class: 'fp-field' }, h('label', { title: p.label }, p.label), input)
-}
-
-function fmt(v, p) {
-  return `${+Number(v).toFixed(2)}${p.unit || ''}`
 }
 
 // A palette param: a named palette (shown as a strip) or "custom", which

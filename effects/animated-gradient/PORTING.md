@@ -24,8 +24,11 @@ Repeating the first color at the end makes the loop seamless. In fairy-shop the 
 - `palette` (Colors): a palette name from `effects/_lib/palettes.js` (default `pastel`), or an array of colors when the user picked custom. Older files carry `a`, `b`, `c` instead.
 - `angle` (Angle): default `135` deg
 - `duration` (Duration): default `15000` ms
+- `size` (Gradient size): default `400` %. The gradient's size relative to the element; lower shows more colors at once.
 
-Gradient: `linear-gradient(<angle>deg, c1, ..., cN, c1)`, `background-size: 400% 400%`.
+Gradient: `linear-gradient(<angle>deg, c1, ..., cN, c1)`, `background-size: <size>% <size>%`.
+
+If the gradient needs `!important` to beat an existing background, put it on `background-image` and `background-size` only. An `!important` `background` shorthand also locks `background-position`, and animations can't override `!important`, so the gradient stops moving.
 
 The change file gives the values the user chose. Map colors to the project's existing tokens when one matches.
 
