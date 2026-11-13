@@ -24,6 +24,10 @@ export const state = {
   band: null,
   orient: null,
   scope: 'instance',
+  // "Choose places": component call sites (file:line:col) and source lines
+  // of same-styled elements that new edits apply to.
+  uses: [],
+  srcs: [],
   breakpoints: [640, 1024],
   themeMode: null,
   forcedTheme: null,

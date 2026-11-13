@@ -6,7 +6,8 @@
 // The live preview is switched off while checking, so this measures the
 // shipped code, not the overlay.
 
-import { resolve } from './locate.js'
+import { resolveLoose } from './locate.js'
+import { textSlots } from './preview.js'
 import { mediaMatches } from './media.js'
 import { currentTheme } from './theme.js'
 import { state } from './state.js'
@@ -34,7 +35,7 @@ export async function verify(file, doc = view.doc) {
         result.skipped.push({ id: c.id, reason: `theme: needs ${t.theme}` })
         continue
       }
-      if (c.type === 'galleryAdd' || c.type === 'name') {
+      if (c.type === 'galleryAdd' || c.type === 'name' || c.type === 'note') {
         result.skipped.push({ id: c.id, reason: `${c.type}: nothing to check on the page` })
         continue
       }
@@ -50,7 +51,7 @@ export async function verify(file, doc = view.doc) {
         result.skipped.push({ id: c.id, reason: ':hover: hover the element and check by eye' })
         continue
       }
-      let el = resolve(t, doc)
+      let el = resolveLoose(t, doc)
       if (el && t.part === 'text') el = el.firstElementChild && el.children.length === 1 ? el.firstElementChild : el
       if (!el) {
         result.notFound.push({ id: c.id, selector: t.selector, text: t.text })
@@ -66,11 +67,11 @@ export async function verify(file, doc = view.doc) {
         }
         ;(bad.length ? result.mismatch : result.ok).push({ id: c.id, ...(bad.length ? { props: bad } : {}) })
       } else if (c.type === 'text') {
-        const got = (el.textContent || '').replace(/\s+/g, ' ').trim()
+        const got = c.attr ? el.getAttribute(c.attr) || '' : c.slot != null ? textSlots(el)[c.slot]?.nodeValue.replace(/\s+/g, ' ').trim() ?? '' : (el.textContent || '').replace(/\s+/g, ' ').trim()
         ;(got === c.to ? result.ok : result.mismatch).push({ id: c.id, ...(got === c.to ? {} : { expected: c.to, got }) })
       } else if (c.type === 'reorder') {
-        const parent = resolve(c.to.parent, doc)
-        const before = c.to.before ? resolve(c.to.before, doc) : null
+        const parent = resolveLoose(c.to.parent, doc)
+        const before = c.to.before ? resolveLoose(c.to.before, doc) : null
         const okParent = parent && el.parentElement === parent
         const okPos = c.to.before ? el.nextElementSibling === before : !el.nextElementSibling
         ;(okParent && okPos ? result.ok : result.mismatch).push({ id: c.id, ...(okParent && okPos ? {} : { reason: okParent ? 'wrong position' : 'wrong parent' }) })

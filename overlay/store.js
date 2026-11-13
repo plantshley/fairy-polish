@@ -177,6 +177,7 @@ export function removeChanges(ids) {
 export function targetKey(t) {
   if (t.scope === 'component' && t.source) return 'src:' + t.source
   if (t.scope === 'selector' && t.classSelector) return 'sel:' + t.classSelector
+  if (t.scope === 'uses' && t.useKey) return 'use:' + t.useKey
   return 'id:' + t.fpId
 }
 

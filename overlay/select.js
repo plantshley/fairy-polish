@@ -2,14 +2,16 @@
 // whichever document is being edited (the page or the framed preview) and
 // draws its boxes in the editor's shadow root in top-window coordinates.
 
+import { on, off } from './isolate.js'
 import { h } from './dom.js'
 import { state, uiChanged } from './state.js'
 import { view, topRect, onDocChange } from './view.js'
 import { setStyle, setText, targetFor, currentMedia, currentSize } from './edit.js'
 import { commit, nextId } from './store.js'
-import { singleTextNode, unwrapText } from './preview.js'
-import { ownText } from './locate.js'
+import { singleTextNode, unwrapText, textSlots } from './preview.js'
+import { ownText, idText } from './locate.js'
 import { openMenuAt } from './controls.js'
+import { useOf } from './uses.js'
 
 let root
 let hoverBox
@@ -44,12 +46,12 @@ export function initSelect(container) {
 export function attach(doc = view.doc) {
   if (attachedDoc) detach()
   attachedDoc = doc
-  for (const [t, fn] of HANDLERS) doc.addEventListener(t, fn, true)
+  for (const [t, fn] of HANDLERS) on(doc, t, fn, true)
 }
 
 export function detach() {
   if (!attachedDoc) return
-  for (const [t, fn] of HANDLERS) attachedDoc.removeEventListener(t, fn, true)
+  for (const [t, fn] of HANDLERS) off(attachedDoc, t, fn, true)
   attachedDoc = null
 }
 
@@ -62,6 +64,16 @@ function real(el) {
   return el?.nodeType === 1 && el.hasAttribute('data-fp-text') ? el.parentElement : el
 }
 
+// What the pointer is over. A disabled button or input gets no mouse events,
+// so the browser reports its ancestor; the deepest element at the point is
+// the one meant.
+function under(e) {
+  const t = real(e.target)
+  if (t?.nodeType !== 1) return t
+  const at = real(t.ownerDocument.elementFromPoint(e.clientX, e.clientY))
+  return at && at !== t && t.contains(at) ? at : t
+}
+
 function pickable(el) {
   return el && el.nodeType === 1 && el !== el.ownerDocument.documentElement && !el.closest?.('fp-host, [data-fp-host]')
 }
@@ -71,7 +83,7 @@ const HANDLERS = [
   ['pointerdown', block],
   ['mousedown', block],
   ['mouseup', block],
-  ['pointerup', block],
+  ['pointerup', onUp],
   ['click', onClick],
   ['dblclick', onDbl],
   ['submit', block],
@@ -104,12 +116,21 @@ function guardEditing(e) {
   return false
 }
 
+// Disabled buttons and inputs get pointer events but never a click, so they
+// are selected on pointerup instead.
+function onUp(e) {
+  block(e)
+  if (!live() || isEditor(e) || editing || e.button !== 0) return
+  const t = under(e)
+  if (t?.nodeType === 1 && t.closest(':disabled') && pickable(t)) select(t)
+}
+
 function onMove(e) {
   if (!live() || isEditor(e) || drag) {
     if (!live()) state.hovered = null
     return
   }
-  const t = real(e.target)
+  const t = under(e)
   state.hovered = pickable(t) ? t : null
 }
 
@@ -118,7 +139,7 @@ function onClick(e) {
   if (editing && guardEditing(e)) return
   e.preventDefault()
   e.stopPropagation()
-  let t = real(e.target)
+  let t = under(e)
   if (!pickable(t)) return
   if (e.altKey && t.parentElement && pickable(t.parentElement)) t = t.parentElement
   else if (e.ctrlKey || e.metaKey) return pickUnder(t.ownerDocument, e.clientX, e.clientY)
@@ -157,7 +178,14 @@ function nodeLabel(n) {
 }
 
 export function select(el) {
-  if (el !== state.selected) state.part = 'element'
+  if (el !== state.selected) {
+    state.part = 'element'
+    const u = el && useOf(el)
+    state.uses = u ? [u.loc] : []
+    // Without a call site, the element's own source line stands for it.
+    state.srcs = !u && el?.dataset?.fpSrc ? [el.dataset.fpSrc] : []
+    state.placesFor = null
+  }
   state.selected = el
   uiChanged('selection')
 }
@@ -167,47 +195,101 @@ function onDbl(e) {
   if (editing && guardEditing(e)) return
   e.preventDefault()
   e.stopPropagation()
-  const el = state.selected
+  const doc = e.target.ownerDocument
+  unwrapText(doc)
+  // The run of text under the pointer decides what gets edited, and its
+  // element becomes the selection (a label inside a button, the words beside
+  // an icon).
+  const hit = textNodeAt(doc, e.clientX, e.clientY)
+  let el = state.selected
+  if (hit) {
+    let owner = hit.parentElement
+    if (owner?.hasAttribute('data-fp-text')) owner = owner.parentElement
+    if (owner && pickable(owner)) {
+      if (owner !== el) select(owner)
+      el = owner
+    }
+  }
   if (!el) return
-  unwrapText(el.ownerDocument)
-  if (!(singleTextNode(el) || (!el.children.length && el.textContent.trim()))) return
-  startTextEdit(el)
+  if (singleTextNode(el) || (!el.children.length && el.textContent.trim())) return startTextEdit(el)
+  const slots = textSlots(el)
+  if (hit && slots.includes(hit)) return startTextEdit(el, { slot: slots.indexOf(hit) })
+  if (slots.length) return startTextEdit(el, { slot: 0 })
+}
+
+function textNodeAt(doc, x, y) {
+  let node = null
+  try {
+    if (doc.caretPositionFromPoint) node = doc.caretPositionFromPoint(x, y)?.offsetNode
+    else if (doc.caretRangeFromPoint) node = doc.caretRangeFromPoint(x, y)?.startContainer
+  } catch {}
+  return node?.nodeType === 3 && node.nodeValue.trim() ? node : null
 }
 
 // Double-click: edit the text in place, and switch the panel to the text so
-// style edits that follow apply to it.
-export function startTextEdit(el) {
-  unwrapText(el.ownerDocument)
+// style edits that follow apply to it. opts.slot edits one run of text in an
+// element that also holds other elements; the run is wrapped in a span for
+// the edit and unwrapped after.
+export function startTextEdit(el, opts = {}) {
+  const doc = el.ownerDocument
+  unwrapText(doc)
   state.part = 'text'
   uiChanged('selection')
-  const original = el.textContent
-  const node = singleTextNode(el)
-  const originalNode = node?.nodeValue
-  editing = el
-  el.setAttribute('contenteditable', 'plaintext-only')
-  el.focus()
-  const sel = el.ownerDocument.getSelection()
-  sel.selectAllChildren(el)
-  const doc = el.ownerDocument
+  // Typing changes the element's text, which is how locators recognize it;
+  // pin the shipped text for the length of the edit.
+  const pinned = el.dataset.fpOrig == null
+  if (pinned) el.dataset.fpOrig = idText(el)
+  let box = el
+  let before
+  let restore
+  if (opts.slot != null) {
+    const node = textSlots(el)[opts.slot]
+    if (!node) return
+    const value = node.nodeValue
+    before = value.replace(/\s+/g, ' ').trim()
+    const span = doc.createElement('span')
+    span.setAttribute('data-fp-editing', '')
+    node.before(span)
+    span.append(node)
+    node.nodeValue = before
+    box = span
+    restore = () => {
+      span.replaceWith(node)
+      node.nodeValue = value
+    }
+  } else {
+    const original = el.textContent
+    const node = singleTextNode(el)
+    const originalNode = node?.nodeValue
+    before = original.replace(/\s+/g, ' ').trim()
+    // Put the shipped text back first; the preview re-applies the edit, so
+    // reverting the change later restores the real original.
+    restore = () => {
+      if (node && node.parentNode === el) {
+        el.textContent = ''
+        node.nodeValue = originalNode
+        el.append(node)
+      } else el.textContent = original
+    }
+  }
+  editing = box
+  box.setAttribute('contenteditable', 'plaintext-only')
+  box.focus()
+  doc.getSelection().selectAllChildren(box)
   let done = false
   const finish = (save) => {
     if (done) return
     done = true
-    el.removeEventListener('blur', onBlur)
-    doc.removeEventListener('keydown', onKey, true)
-    doc.removeEventListener('keyup', onKeyUp, true)
-    delete el.fpFinish
-    el.removeAttribute('contenteditable')
-    const next = el.textContent
-    // Put the shipped text back first; the preview re-applies the edit, so
-    // reverting the change later restores the real original.
-    if (node && node.parentNode === el) {
-      el.textContent = ''
-      node.nodeValue = originalNode
-      el.append(node)
-    } else el.textContent = original
+    box.removeEventListener('blur', onBlur)
+    off(doc, 'keydown', onKey, true)
+    off(doc, 'keyup', onKeyUp, true)
+    delete box.fpFinish
+    box.removeAttribute('contenteditable')
+    const next = box.textContent.replace(/\s+/g, ' ').trim()
+    restore()
+    if (pinned) delete el.dataset.fpOrig
     editing = null
-    if (save && next !== original) setText(el, original.trim(), next.trim())
+    if (save && next !== before) setText(el, before, next, opts.slot != null ? { slot: opts.slot } : {})
     else uiChanged('rerender')
   }
   const onBlur = () => finish(true)
@@ -222,19 +304,19 @@ export function startTextEdit(el) {
     } else if (e.key === 'Escape') {
       e.preventDefault()
       finish(false)
-    } else if (e.key === ' ' && e.target !== el && e.target.contains?.(el)) {
+    } else if (e.key === ' ' && e.target !== box && e.target.contains?.(box)) {
       e.preventDefault()
       doc.execCommand('insertText', false, ' ')
     }
   }
   const onKeyUp = (e) => {
     e.stopPropagation()
-    if (e.key === ' ' && e.target !== el && e.target.contains?.(el)) e.preventDefault()
+    if (e.key === ' ' && e.target !== box && e.target.contains?.(box)) e.preventDefault()
   }
-  el.fpFinish = finish
-  el.addEventListener('blur', onBlur)
-  doc.addEventListener('keydown', onKey, true)
-  doc.addEventListener('keyup', onKeyUp, true)
+  box.fpFinish = finish
+  box.addEventListener('blur', onBlur)
+  on(doc, 'keydown', onKey, true)
+  on(doc, 'keyup', onKeyUp, true)
 }
 
 /* ── drawing ────────────────────────────────────────────────────────────── */

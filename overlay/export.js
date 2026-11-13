@@ -9,7 +9,7 @@ import { describe } from './locate.js'
 import { state } from './state.js'
 import { toast } from './toast.js'
 
-const SCOPE_TEXT = { instance: 'this element only', component: 'every copy of this element (everything rendered by the same source line)', selector: 'every element matching the class selector' }
+const SCOPE_TEXT = { instance: 'this element only', component: 'every copy of this element (everything rendered by the same source line)', selector: 'every element matching the class selector', uses: 'only the places listed below' }
 
 function clean(target) {
   if (!target) return target
@@ -59,6 +59,11 @@ export function toMarkdown(file) {
     if (t.pseudo) lines.push(`- Pseudo-element: \`${t.pseudo}\``)
     if (t.text) lines.push(`- Text: “${t.text}”`)
     if (t.kind !== 'site' && t.kind !== 'root') lines.push(`- Applies to: ${SCOPE_TEXT[t.scope] || t.scope}${t.classSelector && t.scope === 'selector' ? ` (\`${t.classSelector}\`)` : ''}`)
+    if (t.route && t.kind !== 'site' && t.kind !== 'root') lines.push(`- Page: ${t.route} only`)
+    if (t.scope === 'uses' && t.uses?.length) lines.push(`- Copies from these call sites: ${t.uses.map((u) => `\`${u}\``).join(', ')}`)
+    if (t.scope === 'uses' && t.srcs?.length) lines.push(`- Elements written at: ${t.srcs.map((u) => `\`${u}\``).join(', ')}`)
+    if (c.slot != null) lines.push(`- Text run ${c.slot + 1} of the element's own text (other children stay)`)
+    if (c.attr) lines.push(`- In the \`${c.attr}\` attribute`)
     lines.push(`- Screen: ${sizeText(t.media)}`)
     if (t.theme && t.theme !== 'both') lines.push(`- Theme: ${t.theme}`)
     if (c.type === 'style') for (const [p, v] of Object.entries(c.props)) lines.push(`- \`${p}\`: \`${v.from}\` → \`${v.to}\`${v.toToken ? ` (token \`${v.toToken}\`)` : ''}${v.mirrored ? ' (mirrored from the other theme)' : ''}${v.fontUrl ? ` (load ${v.fontUrl})` : ''}`)
@@ -71,6 +76,7 @@ export function toMarkdown(file) {
     if (c.type === 'effect') lines.push(`- Effect: \`${c.effect}\` ${JSON.stringify(c.params || {})}`)
     if (c.note) lines.push(`- Note: ${c.note}`)
     if (c.type === 'name') lines.push(`- Name: ${c.name}`)
+    if (c.type === 'note') lines.push(`- Request: ${c.text}`)
     lines.push('')
   }
   return lines.join('\n')

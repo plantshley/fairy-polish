@@ -28,15 +28,25 @@ New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\skills\fairy-polish"
 | Resize an element | Drag any of the 8 handles on the selection box. |
 | Reorder | Drag ⠿ on the selection label and drop on the indicator line. |
 | Move freely | Shift+drag ⠿. Saved as approximate; the agent picks a responsive equivalent. |
-| Edit text | Double-click the selected element (Enter saves, Esc cancels), or use the Text section. |
+| Edit text | Double-click the words (Enter saves, Esc cancels), or use the Text section. In an element that mixes text and child elements (words beside an icon or a link), each run of text is edited on its own. Inputs show their placeholder. |
+| Select a disabled control | Click it as usual. |
 | Undo / redo | Ctrl+Z / Ctrl+Shift+Z (or the footer buttons). |
 | Deselect / close | Esc / Alt+Shift+E. |
 
 **Screen sizes.** "Edits for" picks which sizes new edits apply to: all sizes, or one of the site's own size ranges (named mobile, tablet, desktop, and so on, from its breakpoints; 640 and 1024 when it has none), plus an optional orientation. Picking a range also shows the page at a size inside it, in a frame, so the site's real media queries run. "Full screen" uses this monitor's full-screen size (a kiosk or a presentation): edits go to the range its width falls in, and the page is shown at exactly that size, scaled to fit. "Viewing" only changes the size the page is shown at: each size range, common phone, tablet, and desktop sizes, or a typed width and height.
 
-**Applies to.** Just this element, every copy of it (everything rendered by the same line of code, such as each card in a list), or every element with its classes. Both broader options apply on every page. Every copy shows how many are on this page; the class option also shows how many places in the project's source use those classes. When scopes overlap, the narrower one wins: a "just this element" edit beats "every copy", which beats a class-wide edit.
+**Applies to.** Pick one:
+
+- **just this element**: this element on this page only. The editor recognizes it by its source line, its text, and the components around it, so an edit doesn't jump to a look-alike on another screen.
+- **every copy on this page** or **every copy, every page**: everything rendered by the same line of code, such as each card in a list.
+- **choose places…** (top of the menu): a list of the other places this element has copies at, in two groups. **Copies of** a component lists each place the code uses it (React only). **Same style** lists each element written with the same classes, such as every heading styled `.kiosk-heading`. Each row says what it is and its text (or the labels a list repeats for), the page it's on, and the part of the code it sits in. Places on the current page come first, with a count. Tick the ones the edit should apply to, on any page. Ticking or unticking a place moves edits you already made with this scope.
+- **all .classes on this page** or **all .classes, every page**: every element with the same classes. The every-page option also counts the places in the source that use them.
+
+When scopes overlap, the narrower one wins: just this element, then chosen places, then every copy, then the classes. Page-only edits win over the same edit for every page.
 
 **Element or text.** "Edit the: text only" makes styles apply only where the element's own text is (a highlight behind the words), not to the whole box, and hides the settings that only work on boxes (layout, size, alignment, vertical margins, and background and backdrop filters). Layered effects (sparkles, blobs, shimmer, grain, and so on) are clipped to the letters themselves; motion and glow effects (float, glow, lift) move or light the words. Double-clicking text switches to it.
+
+**Note.** The Note section records a request in words for the selected element, for anything the controls don't cover ("make this sticky on scroll"). It follows **applies to**, and the agent carries it out when it applies the file.
 
 **Theme tab.** Site-wide edits. Design tokens (custom properties on `:root`) change at the source. Colors and fonts without a token are replaced in every CSS rule that uses them. Edits on the Edit tab still win. "Apply to" picks the whole site or only the current page (route); a page value wins over the site value on that page.
 

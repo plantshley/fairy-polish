@@ -11,16 +11,33 @@ import { THEMED_PROPS, currentTheme, setTheme, releaseTheme } from './theme.js'
 import { withPreviewOff, textWrapper, hasOwnText, wrapText } from './preview.js'
 import { matchToken, normalizeColor } from './tokens.js'
 import { mirror, parseColor } from './mirror.js'
+import { useKeyFor } from './uses.js'
 
+// Scopes: instance (this element, on this page), component (every copy of
+// its source line), selector (every element with its classes), uses (copies
+// rendered by the call sites picked in the panel). A "-page" suffix limits
+// component or selector to this page. Page-limited targets carry `route`.
 // opts: { scope, part, pseudo, state } override the panel's settings.
 export function targetFor(el, scope = state.scope, opts = {}) {
   const loc = locatorFor(el)
-  const t = { ...loc, fpId: fpId(el), scope }
-  if (scope === 'component' && !t.source) t.scope = 'instance'
-  if (scope === 'selector') {
+  const page = scope.endsWith('-page')
+  const base = page ? scope.slice(0, -5) : scope
+  const t = { ...loc, fpId: fpId(el), scope: base }
+  if (base === 'component' && !t.source) t.scope = 'instance'
+  if (base === 'selector') {
     if (loc.classes.length) t.classSelector = '.' + loc.classes.join('.')
     else t.scope = 'instance'
   }
+  if (base === 'uses') {
+    const uses = t.source ? [...state.uses].sort() : []
+    const srcs = [...state.srcs].sort()
+    if (uses.length || srcs.length) {
+      t.uses = uses
+      t.srcs = srcs
+      t.useKey = useKeyFor(t.source, uses, srcs)
+    } else t.scope = 'instance'
+  }
+  if (page || t.scope === 'instance') t.route = view.win.location.pathname
   const part = opts.part ?? state.part
   if (part === 'text' && hasOwnText(el)) t.part = 'text'
   if (opts.pseudo) t.pseudo = opts.pseudo
@@ -199,8 +216,8 @@ const SECTION_PROPS = {
 export function sectionReset(el, section) {
   const fp = el.dataset.fpId
   if (section === 'Name') return getChanges().some((c) => c.type === 'name' && c.target.fpId === fp) ? () => setName(el, '') : null
-  if (section === 'Text' || section === 'Effects') {
-    const type = section === 'Text' ? 'text' : 'effect'
+  if (section === 'Text' || section === 'Effects' || section === 'Note') {
+    const type = { Text: 'text', Effects: 'effect', Note: 'note' }[section]
     const ids = getChanges().filter((c) => c.type === type && c.target.fpId === fp).map((c) => c.id)
     return ids.length ? () => removeChanges(ids) : null
   }
@@ -310,19 +327,48 @@ export function setName(el, name) {
   })
 }
 
-export function setText(el, from, to) {
+// opts.slot: which of the element's own runs of text (textSlots), when it
+// has more than one or has child elements too. opts.attr: an attribute that
+// holds the text instead (placeholder, value).
+export function setText(el, from, to, opts = {}) {
   const target = targetFor(el, 'instance', { part: 'element' })
+  const slot = opts.slot ?? null
+  const attr = opts.attr ?? null
+  const same = (c) => c.type === 'text' && c.target.fpId === target.fpId && (c.slot ?? null) === slot && (c.attr ?? null) === attr
   commit((changes) => {
-    const existing = changes.find((c) => c.type === 'text' && c.target.fpId === target.fpId)
+    const existing = changes.find(same)
     if (existing) {
       if (to === existing.from) changes.splice(changes.indexOf(existing), 1)
       else existing.to = to
-    } else if (to !== from) changes.push({ id: nextId(), type: 'text', target, from, to })
+    } else if (to !== from) changes.push({ id: nextId(), type: 'text', target, from, to, ...(slot != null ? { slot } : {}), ...(attr ? { attr } : {}) })
   })
 }
 
-export function textChangeFor(el) {
-  return getChanges().find((c) => c.type === 'text' && c.target.fpId === el.dataset.fpId) || null
+// A request in words about an element: anything the panel has no control
+// for. One per element and scope; empty text removes it.
+export function setElementNote(el, text) {
+  const target = targetFor(el)
+  target.media = currentMedia()
+  const key = targetKey(target)
+  commit((changes) => {
+    const i = changes.findIndex((c) => c.type === 'note' && targetKey(c.target) === key && c.target.fpId === target.fpId)
+    if (!text) {
+      if (i >= 0) changes.splice(i, 1)
+      return
+    }
+    if (i >= 0) changes[i].text = text
+    else changes.push({ id: nextId(), type: 'note', target, text })
+  })
+}
+
+export function elementNotes(el) {
+  return getChanges().filter((c) => c.type === 'note' && c.target.fpId === el.dataset.fpId)
+}
+
+export function textChangeFor(el, opts = {}) {
+  const slot = opts.slot ?? null
+  const attr = opts.attr ?? null
+  return getChanges().find((c) => c.type === 'text' && c.target.fpId === el.dataset.fpId && (c.slot ?? null) === slot && (c.attr ?? null) === attr) || null
 }
 
 export function addEffect(el, effect, params, note = '') {

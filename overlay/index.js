@@ -2,6 +2,7 @@
 // yet-applied changes renders whether or not the editor is open, so the page
 // keeps looking the way you left it across reloads.
 
+import { on, installIsolation, setMode } from './isolate.js'
 import { h } from './dom.js'
 import { CSS } from './styles.js'
 import { state, onUi, uiChanged } from './state.js'
@@ -19,8 +20,18 @@ import { verify } from './verify.js'
 import { buildFile } from './export.js'
 import { reserveIds } from './locate.js'
 
+// Before the app's modules run, so its window listeners can't block the editor.
+installIsolation()
+if (window.name === FRAME_NAME) setMode(() => window.parent.__fairyPolish?.mode?.() || 'off')
+
+function editorMode() {
+  if (!state.active) return 'off'
+  return state.interact || state.collapsed ? 'open' : 'live'
+}
+
 function boot() {
   if (window.name === FRAME_NAME || window.__fairyPolish) return
+  setMode(editorMode)
 
   for (const c of getChanges()) {
     for (const t of [c.target, c.to?.parent, c.to?.before]) {
@@ -113,9 +124,9 @@ function boot() {
   })
 
   subscribe(() => renderAll())
-  window.addEventListener('keydown', onKey, true)
+  on(window, 'keydown', onKey, true)
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyEditorTheme)
-  window.addEventListener('resize', () => layoutFrame(state.frameSize, panelW(), state.dock))
+  on(window, 'resize', () => layoutFrame(state.frameSize, panelW(), state.dock))
 
   function onKey(e) {
     if (matchesHotkey(e)) {
@@ -162,6 +173,7 @@ function boot() {
     open: () => !state.active && toggle(),
     close: () => state.active && toggle(),
     clear: clearAll,
+    mode: editorMode,
     version: 1,
   }
 }

@@ -9,24 +9,36 @@
 // and replayed in order only when the structural part of the set changes.
 
 import { getChanges as allChanges, patchSilent } from './store.js'
-import { resolve, previewSelector, baseSelector } from './locate.js'
+import { resolve, previewSelector, baseSelector, stillMatches, idText } from './locate.js'
 import { normalizeColor } from './tokens.js'
 import { themeWrap, currentTheme } from './theme.js'
 import { mediaMatches } from './media.js'
 import { state } from './state.js'
 import { loadEffect, effectMeta } from './effects.js'
 import { applyInText } from './textmask.js'
+import { markUses } from './uses.js'
 
 const STYLE_ID = 'fp-preview'
 
 // Hidden changes (Changes tab) are left out of the preview.
 const getChanges = () => allChanges().filter((c) => !c.hidden)
 
+// The element tagged with the target's id, unless the page reused that node
+// for something else; then the tag comes off so the target is found anew.
+function current(doc, t) {
+  const el = byId(doc, t.fpId)
+  if (el && !stillMatches(el, t)) {
+    delete el.dataset.fpId
+    return null
+  }
+  return el
+}
+
 export function resolveAll(doc) {
   for (const c of getChanges()) {
     for (const t of targetsOf(c)) {
       if (!t?.fpId) continue
-      if (doc.querySelector(`[data-fp-id="${t.fpId}"]`)) continue
+      if (current(doc, t)) continue
       const el = resolve(t, doc)
       if (el && !el.dataset.fpId) el.dataset.fpId = t.fpId
     }
@@ -48,7 +60,7 @@ export function byId(doc, id) {
 // at its own point in the replay.
 function ensure(doc, t) {
   if (!t?.fpId) return null
-  const found = byId(doc, t.fpId)
+  const found = current(doc, t)
   if (found) return found
   const el = resolve(t, doc)
   if (el && !el.dataset.fpId) el.dataset.fpId = t.fpId
@@ -221,17 +233,19 @@ export function withPreviewOff(doc, fn) {
 
 const structural = new WeakMap() // doc → { sig, undo: [fn] }
 
-function structuralSig() {
-  return JSON.stringify(getChanges().filter((c) => c.type === 'reorder' || c.type === 'text').map((c) => [c.id, c.to, c.target.fpId]))
+function structuralSig(doc) {
+  return doc.defaultView.location.pathname + JSON.stringify(getChanges().filter((c) => c.type === 'reorder' || c.type === 'text').map((c) => [c.id, c.to, c.target.fpId, c.slot]))
 }
 
 function renderStructural(doc) {
-  const sig = structuralSig()
+  const sig = structuralSig(doc)
+  const path = doc.defaultView.location.pathname
   const prev = structural.get(doc)
   if (prev && prev.sig === sig) return
   if (prev) for (const fn of prev.undo.reverse()) fn()
   const undo = []
   for (const c of getChanges()) {
+    if (c.target?.route && c.target.route !== path) continue
     if (c.type === 'reorder') {
       const el = ensure(doc, c.target)
       const parent = ensure(doc, c.to.parent)
@@ -247,12 +261,24 @@ function renderStructural(doc) {
     if (c.type === 'text') {
       const el = ensure(doc, c.target)
       if (!el) continue
-      const node = singleTextNode(el)
+      // Keep the shipped text findable: locators match on it.
+      if (el.dataset.fpOrig == null) {
+        el.dataset.fpOrig = idText(el)
+        undo.push(() => delete el.dataset.fpOrig)
+      }
+      if (c.attr) {
+        const orig = el.getAttribute(c.attr)
+        el.setAttribute(c.attr, c.to)
+        undo.push(() => (orig == null ? el.removeAttribute(c.attr) : el.setAttribute(c.attr, orig)))
+        continue
+      }
+      const node = c.slot != null ? textSlots(el)[c.slot] : singleTextNode(el)
       if (node) {
         const orig = node.nodeValue
-        node.nodeValue = c.to
+        // A slot keeps the spaces around it, which separate it from its neighbors.
+        node.nodeValue = c.slot != null ? orig.match(/^\s*/)[0] + c.to + orig.match(/\s*$/)[0] : c.to
         undo.push(() => (node.nodeValue = orig))
-      } else {
+      } else if (c.slot == null) {
         const orig = el.innerHTML
         el.textContent = c.to
         undo.push(() => (el.innerHTML = orig))
@@ -260,6 +286,18 @@ function renderStructural(doc) {
     }
   }
   structural.set(doc, { sig, undo })
+}
+
+// An element's own runs of text, in order: its direct text nodes that aren't
+// blank, looking through the preview's text wrappers. A text change with a
+// slot edits one of these and leaves the element's other children alone.
+export function textSlots(el) {
+  const out = []
+  for (const n of el.childNodes) {
+    if (n.nodeType === 3 && n.nodeValue.trim()) out.push(n)
+    else if (n.nodeType === 1 && n.hasAttribute('data-fp-text')) for (const m of n.childNodes) if (m.nodeType === 3 && m.nodeValue.trim()) out.push(m)
+  }
+  return out
 }
 
 export function singleTextNode(el) {
@@ -352,6 +390,7 @@ export function render(doc) {
   renderStructural(doc)
   resolveAll(doc)
   renderWrappers(doc)
+  markUses(doc, getChanges())
   loadFonts(doc)
   writeStyle(doc, buildCss(doc))
   recordComputed(doc)

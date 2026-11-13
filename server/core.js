@@ -5,12 +5,14 @@
 //   GET  /changes/<name>    a saved change file from <project>/.fairy-polish
 //   GET  /applied           names of files the agent moved to applied/
 //   GET  /usage?classes=a,b where the project's source uses those classes together
+//   GET  /places?comp=Name&classes=a,b   places the element has copies at (choose places)
 //   POST /save              writes <stamp>.json and <stamp>.md
 
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { bundleOverlay } from '../scripts/build.mjs'
+import { findPlaces } from './places.js'
 
 export const BASE = '/@fairy-polish'
 export const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -75,7 +77,7 @@ const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '.git', '.fairy-poli
 const MAX_FILES = 4000
 let sourceCache = { root: null, at: 0, files: [] }
 
-async function sourceFiles(root) {
+export async function sourceFiles(root) {
   if (sourceCache.root === root && Date.now() - sourceCache.at < 5000) return sourceCache.files
   const files = []
   const walk = async (dir) => {
@@ -134,6 +136,11 @@ export function createHandler({ root }) {
       if (req.method === 'GET' && sub === 'usage') {
         const classes = (url.searchParams.get('classes') || '').split(',').filter((c) => /^[\w-]+$/.test(c))
         return send(res, 200, JSON.stringify(await classUsage(root, classes)), TYPES['.json'])
+      }
+      if (req.method === 'GET' && sub === 'places') {
+        const comp = url.searchParams.get('comp') || ''
+        const classes = (url.searchParams.get('classes') || '').split(',').filter(Boolean)
+        return send(res, 200, JSON.stringify(findPlaces(await sourceFiles(root), { comp, classes })), TYPES['.json'])
       }
       if (req.method === 'GET' && sub === 'applied') {
         const names = await fs.readdir(path.join(changesDir, 'applied')).catch(() => [])

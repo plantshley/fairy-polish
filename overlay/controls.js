@@ -2,6 +2,7 @@
 // opts) callback; opts.mergeKey groups a drag or arrow-key run into one undo.
 // Menus are the editor's own (fp-menu), never the browser's <select>.
 
+import { on, off } from './isolate.js'
 import { h } from './dom.js'
 import { PALETTES } from '../effects/_lib/palettes.js'
 
@@ -83,14 +84,14 @@ export function openMenuAt(anchor, items, onPick, { current } = {}) {
       closeMenu()
     }
   }
-  doc.addEventListener('pointerdown', away, true)
-  doc.addEventListener('keydown', key, true)
+  on(doc, 'pointerdown', away, true)
+  on(doc, 'keydown', key, true)
   open = {
     el: menu,
     anchor,
     off: () => {
-      doc.removeEventListener('pointerdown', away, true)
-      doc.removeEventListener('keydown', key, true)
+      off(doc, 'pointerdown', away, true)
+      off(doc, 'keydown', key, true)
     },
   }
 }
@@ -375,9 +376,9 @@ function openColorPop(anchor, value, set) {
       closePop()
     }
   }
-  doc.addEventListener('pointerdown', away, true)
-  doc.addEventListener('keydown', key, true)
-  pop = { el, anchor, off: () => { doc.removeEventListener('pointerdown', away, true); doc.removeEventListener('keydown', key, true) } }
+  on(doc, 'pointerdown', away, true)
+  on(doc, 'keydown', key, true)
+  pop = { el, anchor, off: () => { off(doc, 'pointerdown', away, true); off(doc, 'keydown', key, true) } }
 }
 
 // A hex for the native picker from any CSS color (a token, a name, hsl()).

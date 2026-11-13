@@ -155,6 +155,21 @@ textarea.fp-in { resize: vertical; min-height: 42px; }
 .fp-badge { font-size: 8px; padding: 0 4px; border-radius: 6px; background: var(--fp-raised); border: 1px solid var(--fp-line); color: var(--fp-muted); }
 .fp-badge.mir { color: var(--fp-warn); border-color: var(--fp-warn); }
 
+.fp-uses { display: grid; gap: 4px; margin-top: 4px; }
+.fp-uses-list { max-height: 260px; overflow: auto; border: 1px solid var(--fp-line); border-radius: 3px; }
+.fp-use { display: flex; gap: 6px; align-items: flex-start; padding: 4px 6px; border-bottom: 1px solid var(--fp-line); cursor: pointer; }
+.fp-use:last-child { border-bottom: 0; }
+.fp-use:hover { background: var(--fp-raised); }
+.fp-use[hidden] { display: none; }
+.fp-use input { margin: 1px 0 0; }
+.fp-use .grow { display: grid; gap: 1px; min-width: 0; }
+.fp-use-what { font-size: 10px; }
+.fp-use.cur .fp-use-what { font-weight: 600; }
+.fp-use-where { font-size: 9px; color: var(--fp-muted); }
+.fp-use-where b { font-weight: 600; color: var(--fp-ink, inherit); }
+.fp-use-head { position: sticky; top: 0; z-index: 1; background: var(--fp-bg, var(--fp-surface)); padding: 4px 6px; border-bottom: 1px solid var(--fp-line); font-size: 9px; font-weight: 600; }
+.fp-use-group + .fp-use-group { border-top: 2px solid var(--fp-line); }
+.fp-use-code { font-size: 8px; color: var(--fp-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fp-crumbs { display: flex; flex-wrap: wrap; gap: 2px; font-size: 8px; color: var(--fp-muted); padding: 6px 0 2px; }
 .fp-crumbs span { cursor: pointer; padding: 0 2px; border-radius: 2px; }
 .fp-crumbs span:hover { background: var(--fp-raised); color: var(--fp-ink); }

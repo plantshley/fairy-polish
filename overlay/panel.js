@@ -3,20 +3,21 @@
 // scrub is in progress, re-renders wait so the control under the pointer
 // survives.
 
+import { on, off } from './isolate.js'
 import { h, clear, put, DISPLAY_NAME } from './dom.js'
 import { state, savePrefs, uiChanged, onUi } from './state.js'
 import { sectionReset } from './edit.js'
-import { removeChange, getChanges, subscribe, undo, redo, canUndo, canRedo, clearAll, removeChanges, getNotes, setNotes, setChangeNote, setHidden } from './store.js'
+import { commit, removeChange, getChanges, subscribe, undo, redo, canUndo, canRedo, clearAll, removeChanges, getNotes, setNotes, setChangeNote, setHidden } from './store.js'
 import {
   lengthField, selectField, textField, colorField, quadField, setColorSources, textInput, dropdown, segmented, combo, field,
   gradientEditor, closeMenu, colorChips,
 } from './controls.js'
 import {
-  setStyle, setStyles, valueFor, setName, setText, textChangeFor, currentSize, currentBand, pageTheme, shipped, addEffect,
+  setStyle, setStyles, valueFor, setName, setText, textChangeFor, setElementNote, elementNotes, targetFor, currentSize, currentBand, pageTheme, shipped, addEffect,
   addToGallery, setKeyframes, keyframesValue, updateEffect,
 } from './edit.js'
 import { bands, previewSizeFor } from './media.js'
-import { describe } from './locate.js'
+import { describe, idText } from './locate.js'
 import { pageColors } from './tokens.js'
 import { fontDropdown } from './fonts.js'
 import { view } from './view.js'
@@ -24,10 +25,11 @@ import { renderGallery, renderAttached, stopThumbs } from './gallery.js'
 import { renderTheme } from './themetab.js'
 import { saveChanges } from './export.js'
 import { select, startTextEdit } from './select.js'
-import { hasOwnText, trappingAncestors, withPreviewOff } from './preview.js'
+import { hasOwnText, trappingAncestors, withPreviewOff, textSlots } from './preview.js'
 import { findExisting, nth, withNth } from './existing.js'
 import { LENGTHS, SHADOWS, TEXT_SHADOWS, FILTERS, BACKDROPS, FROSTED } from './presets.js'
 import { base } from './config.js'
+import { useOf, placesFor, onPageFor, useKeyFor } from './uses.js'
 
 let panel
 let body
@@ -59,7 +61,7 @@ export function initPanel(rootEl, shadowRoot) {
   panel.addEventListener('pointerdown', () => (busy = true))
   // Wait until the click that follows this pointerup has run: redrawing
   // first would replace the button under the pointer and swallow the click.
-  shadow.ownerDocument.addEventListener('pointerup', () => setTimeout(() => {
+  on(shadow.ownerDocument, 'pointerup', () => setTimeout(() => {
     busy = false
     flush()
   }, 0))
@@ -341,23 +343,152 @@ function scopeRow() {
   const doc = el.ownerDocument
   const src = el.dataset.fpSrc
   const cls = [...el.classList].filter((c) => /^[A-Za-z_-][\w-]*$/.test(c) && !c.startsWith('fp-'))
-  const items = [{ value: 'instance', label: 'just this element' }]
+  const route = view.win.location.pathname
+  const use = useOf(el)
+  const items = []
+  if (src && (use || cls.length)) items.push({ value: 'uses', label: 'choose places…', title: 'Pick the places in the code that get the edit: copies of this component, or elements with the same style, on any page.' })
+  items.push({ value: 'instance', label: 'just this element', hint: 'this page', title: `Only this element, and only on ${route}.` })
   if (src) {
     const n = count(doc, `[data-fp-src="${src}"]`)
-    items.push({ value: 'component', label: `every copy (${n} on this page)`, title: `Everything rendered by ${src.split('/').pop()}, on every page: each card in a list, each use of a component. The count is only what this page shows.` })
+    items.push({ value: 'component-page', label: `every copy on this page (${n})`, title: `Everything rendered by ${src.split('/').pop()}, only on ${route}.` })
+    items.push({ value: 'component', label: 'every copy, every page', title: `Everything rendered by ${src.split('/').pop()} on every page: each card in a list, each use of a component.` })
   }
   if (cls.length) {
     const sel = '.' + cls.join('.')
     const u = codeUsage(cls)
-    const inCode = u ? `, ${u.places} in code` : ''
-    const where = u?.files.length ? `
-Used in: ${u.files.map((f) => `${f.file} (${f.places})`).join(', ')}` : ''
-    items.push({ value: 'selector', label: `all ${sel} (${count(doc, sel)} on this page${inCode})`, title: `Every element with the classes ${sel}, on every page. "In code" counts the places in the source that use them.${where}` })
+    const where = u?.files.length ? `\nUsed in: ${u.files.map((f) => `${f.file} (${f.places})`).join(', ')}` : ''
+    items.push({ value: 'selector-page', label: `all ${sel} on this page (${count(doc, sel)})`, title: `Every element with the classes ${sel}, only on ${route}.` })
+    items.push({ value: 'selector', label: `all ${sel}, every page${u ? ` (${u.places} in code)` : ''}`, title: `Every element with the classes ${sel}, on every page. "In code" counts the places in the source that use them.${where}` })
   }
   const value = items.some((i) => i.value === state.scope) ? state.scope : 'instance'
-  return h('div', { class: 'fp-row', style: { flexWrap: 'nowrap' } },
+  const row = h('div', { class: 'fp-row', style: { flexWrap: 'nowrap' } },
     h('span', { class: 'fp-kbd', title: 'Which elements new edits apply to' }, 'applies to'),
-    h('div', { class: 'grow' }, dropdown(value, items, (v) => { state.scope = v; uiChanged('rerender') })))
+    h('div', { class: 'grow' }, dropdown(value, items, (v) => {
+      state.scope = v
+      uiChanged('rerender')
+    })))
+  return value === 'uses' ? h('div', {}, row, placesPicker(el, use, cls)) : row
+}
+
+/* ── choose places ──────────────────────────────────────────────────────── */
+
+const TAG_KIND = { h1: 'Heading', h2: 'Heading', h3: 'Heading', h4: 'Heading', h5: 'Heading', h6: 'Heading', button: 'Button', a: 'Link', p: 'Paragraph', label: 'Label', li: 'List item', input: 'Field', textarea: 'Field', select: 'Menu', img: 'Image', nav: 'Navigation', section: 'Section', header: 'Header', footer: 'Footer', table: 'Table', td: 'Table cell', th: 'Table heading' }
+
+// "WalkInChoice" → "Walk in choice"
+function humanize(name) {
+  if (!name) return ''
+  const w = name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/([A-Z])([A-Z][a-z])/g, '$1 $2').toLowerCase()
+  return w.charAt(0).toUpperCase() + w.slice(1)
+}
+
+function pagesText(pages) {
+  if (!pages?.length) return ''
+  if (pages.includes('')) return 'every page'
+  const nice = pages.map((p) => (p.endsWith('/…') ? p.slice(0, -2) + ' pages' : p))
+  return nice.length > 3 ? `${nice.length} pages` : nice.join(', ')
+}
+
+let placesQuery = ''
+
+// Places the selected element has copies at, in two groups: uses of the
+// component that wrote it, and elements written with the same classes. A
+// group with only this element in it is left out.
+function placesPicker(el, use, cls) {
+  const doc = el.ownerDocument
+  const src = el.dataset.fpSrc
+  const data = placesFor(use?.comp || null, cls, () => uiChanged('rerender'))
+  if (!data) return h('div', { class: 'fp-help' }, 'Finding where it appears in the code…')
+  if (data.failed) return h('div', { class: 'fp-help', style: { color: 'var(--fp-warn)' } }, 'The dev server couldn’t list places. Restart it (stop it and run it again) so it picks up the latest fairy polish, then reload the page.')
+  const showUses = !!use && data.uses.length > 1
+  const showClasses = data.classes.length > 1
+  // First look at this element: when only the same-style group has choices,
+  // this element counts as its own line there, not as a component call site.
+  if (state.placesFor !== el) {
+    state.placesFor = el
+    if (showClasses && !showUses) {
+      state.uses = []
+      state.srcs = [src]
+    }
+  }
+  const uses = new Set(state.uses)
+  const srcs = new Set(state.srcs)
+  const sync = (nextUses, nextSrcs) => {
+    const oldKey = useKeyFor(src, [...state.uses].sort(), [...state.srcs].sort())
+    state.uses = [...nextUses]
+    state.srcs = [...nextSrcs]
+    const u = [...state.uses].sort()
+    const s = [...state.srcs].sort()
+    const mine = getChanges().filter((c) => c.target?.scope === 'uses' && c.target.useKey === oldKey)
+    if (mine.length && (u.length || s.length)) commit(() => { for (const c of mine) Object.assign(c.target, { uses: u, srcs: s, useKey: useKeyFor(src, u, s) }) })
+    else uiChanged('rerender')
+  }
+
+  const rowFor = (place, kind) => {
+    const live = onPageFor(doc, place, kind, src)
+    const liveText = [...new Set(live.map((n) => idText(n)).filter(Boolean))]
+    const isThis = kind === 'class' ? place.loc === src : place.loc === use?.loc
+    const checked = kind === 'class' ? srcs.has(place.loc) : uses.has(place.loc)
+    const what = kind === 'class' ? TAG_KIND[place.tag] || 'Element' : humanize(data.component)
+    const labels = liveText.length ? liveText : place.items?.length ? place.items : place.text ? [place.text] : []
+    const many = place.list || labels.length > 1
+    const title = labels.length
+      ? `${what}${many ? 's' : ''}: ${labels.slice(0, 6).map((t) => `“${t}”`).join(', ')}${labels.length > 6 ? ` +${labels.length - 6} more` : ''}`
+      : `${what}${place.list ? 's (one per item in a list)' : ''}`
+    const where = [pagesText(place.pages), place.inside ? `in ${humanize(place.inside)}` : ''].filter(Boolean).join(' · ')
+    const box = h('input', { type: 'checkbox', checked: checked ? true : null })
+    box.addEventListener('change', () => {
+      const u = new Set(uses)
+      const s = new Set(srcs)
+      const set = kind === 'class' ? s : u
+      box.checked ? set.add(place.loc) : set.delete(place.loc)
+      sync(u, s)
+    })
+    const file = place.loc.split(':')[0]
+    return h('label', { class: 'fp-use' + (isThis ? ' cur' : ''), title: place.loc, 'data-q': [title, where, place.loc].join(' ').toLowerCase() },
+      box,
+      h('span', { class: 'grow' },
+        h('span', { class: 'fp-use-what' }, title),
+        h('span', { class: 'fp-use-where' },
+          where,
+          live.length ? h('b', {}, `${where ? ' · ' : ''}${live.length} on this page`) : null,
+          isThis ? h('b', {}, ' · this one') : null),
+        h('span', { class: 'fp-use-code' }, `${file.split('/').pop()} line ${place.line}`)))
+  }
+
+  const groups = []
+  const group = (title, help, list, kind) => {
+    const here = (p) => onPageFor(doc, p, kind, src).length > 0
+    const sorted = [...list].sort((a, b) => (here(b) ? 1 : 0) - (here(a) ? 1 : 0))
+    const picked = list.filter((p) => (kind === 'class' ? srcs : uses).has(p.loc)).length
+    const setAll = (locs) => (kind === 'class' ? sync(uses, new Set(locs)) : sync(new Set(locs), srcs))
+    groups.push(h('div', { class: 'fp-use-group' },
+      h('div', { class: 'fp-row fp-use-head' },
+        h('span', { class: 'grow', title: help }, `${title} · ${picked} of ${list.length}`),
+        h('button', { class: 'fp-btn', title: 'Tick the ones on this page', onClick: () => setAll(list.filter(here).map((p) => p.loc)) }, 'on this page'),
+        h('button', { class: 'fp-btn', onClick: () => setAll(list.map((p) => p.loc)) }, 'all'),
+        h('button', { class: 'fp-btn', onClick: () => setAll([]) }, 'none')),
+      ...sorted.map((p) => rowFor(p, kind))))
+  }
+  if (showUses) group(`Copies of ${humanize(data.component).toLowerCase()}`, `Each place the code uses <${data.component}>.`, data.uses, 'use')
+  if (showClasses) group(`Same style (${data.classSelector})`, `Each element written with the classes ${data.classSelector}.`, data.classes, 'class')
+
+  if (!groups.length) {
+    return h('div', { class: 'fp-help' }, 'This element appears in only one place in the code, so there is nothing else to pick. Use “every copy” or “just this element”.')
+  }
+  const filter = h('input', { class: 'fp-in', value: placesQuery, placeholder: 'filter by text, page, or section', spellcheck: 'false' })
+  const listEl = h('div', { class: 'fp-uses-list' }, groups)
+  const apply = () => {
+    const q = placesQuery.toLowerCase()
+    for (const r of listEl.querySelectorAll('.fp-use')) r.hidden = !!q && !r.dataset.q.includes(q)
+  }
+  filter.addEventListener('keydown', (e) => e.stopPropagation())
+  filter.addEventListener('input', () => { placesQuery = filter.value; apply() })
+  apply()
+  const total = state.uses.length + state.srcs.length
+  return h('div', { class: 'fp-uses' },
+    filter,
+    listEl,
+    h('div', { class: 'fp-help' }, `${total} place${total === 1 ? '' : 's'} ticked. Edits made now apply at every ticked place, on any page.`))
 }
 
 /* ── tabs / footer ──────────────────────────────────────────────────────── */
@@ -408,7 +539,7 @@ function renderBody() {
   body.scrollTop = scroll
 }
 
-const SECTIONS = ['Name', 'Existing effects', 'Layout', 'Size', 'Spacing', 'Type', 'Fill', 'Border', 'Shadow & filter', 'Effects', 'Text']
+const SECTIONS = ['Name', 'Note', 'Existing effects', 'Layout', 'Size', 'Spacing', 'Type', 'Fill', 'Border', 'Shadow & filter', 'Effects', 'Text']
 
 // A collapsible section that remembers whether you left it open.
 // A section with edits for the selected element gets a reset (sectionReset).
@@ -513,6 +644,7 @@ function renderEdit() {
     sec('Name', !!named,
       h('div', { class: 'fp-help' }, 'A label for this element. It appears in the change file and the Changes tab, so you and the agent can refer to it by name.'),
       textField('name', named?.name || '', (v) => setName(el, v), { placeholder: 'e.g. Hero stat card' })),
+    sec('Note', elementNotes(el).length > 0, noteSection(el)),
     existing.length && !tx ? sec('Existing effects', true, existingSection(el, existing)) : null,
     tx ? null : sec('Layout', true,
       S('display', 'display', ['block', 'flex', 'grid', 'inline-block', 'inline', 'inline-flex', 'inline-grid', 'none']),
@@ -567,7 +699,7 @@ function renderEdit() {
         h('button', { class: 'fp-btn', onClick: () => { addEffect(el, 'gradient-glow', { palette: 'rainbow', trigger: 'loop', blur: 8, spread: 5, duration: 20000 }); focusSection('Effects') } }, '+ gradient glow')),
     ),
     sec('Effects', true, renderAttached(el, { onCustom: () => focusSection('Effects') })),
-    sec('Text', false, textSection(el)),
+    sec('Text', ownText || /^(input|textarea)$/.test(el.localName), textSection(el)),
   )
 }
 
@@ -722,26 +854,65 @@ function layerField(el) {
       h('button', { class: 'fp-btn', title: 'Send to back (below every sibling)', onClick: () => set(Math.min(0, ...zs) - 1) }, '⤓')))
 }
 
+/* ── note ───────────────────────────────────────────────────────────────── */
+
+// Anything the controls can't express: the agent reads it as a request for
+// this element (or every copy, per "applies to").
+function noteSection(el) {
+  const notes = elementNotes(el)
+  const mine = notes.find((c) => c.target.scope === targetFor(el).scope) || null
+  const ta = h('textarea', { class: 'fp-in', rows: 3, placeholder: 'e.g. make this sticky on scroll, or pull this label from settings' })
+  ta.value = mine?.text || ''
+  ta.addEventListener('keydown', (e) => e.stopPropagation())
+  ta.addEventListener('change', () => setElementNote(el, ta.value.trim()))
+  const others = notes.filter((c) => c !== mine)
+  return h('div', { style: { display: 'grid', gap: '4px' } },
+    h('div', { class: 'fp-help' }, 'A request for the agent about this element, for anything the controls don’t cover. It follows “applies to”.'),
+    ta,
+    ...others.map((c) => h('div', { class: 'fp-help' }, `${summarize(c).what}: “${c.text}”`)))
+}
+
 /* ── text ───────────────────────────────────────────────────────────────── */
 
 function textSection(el) {
-  const change = textChangeFor(el)
-  const simple = !el.children.length || (el.children.length === 1 && el.firstElementChild.hasAttribute('data-fp-text'))
-  if (!simple && !change) {
-    return h('div', { class: 'fp-help' }, 'This element’s text is split across child elements. Select the child that holds the words you want to change.')
+  const norm = (t) => (t || '').replace(/\s+/g, ' ').trim()
+  // One text box per run of text: the whole element when it holds only text,
+  // else each of its own runs (the words beside an icon, either side of a link).
+  const row = (label, current, opts) => {
+    const change = textChangeFor(el, opts)
+    const original = change?.from ?? current
+    const ta = h('textarea', { class: 'fp-in', rows: current.length > 40 ? 3 : 1 })
+    ta.value = current
+    ta.addEventListener('keydown', (e) => e.stopPropagation())
+    ta.addEventListener('change', () => setText(el, original, norm(ta.value), opts))
+    return h('div', { style: { display: 'grid', gap: '4px' } },
+      label ? h('span', { class: 'fp-kbd' }, label) : null,
+      ta,
+      h('div', { class: 'fp-row' },
+        h('span', { class: 'fp-help grow' }, change ? `Was: “${change.from}”` : ''),
+        change ? h('button', { class: 'fp-btn', onClick: () => setText(el, original, original, opts) }, 'revert') : null,
+        opts.attr ? null : h('button', { class: 'fp-btn', title: 'Edit the text in place on the page', onClick: () => startTextEdit(el, opts) }, 'edit on page')))
   }
-  const current = (el.textContent || '').replace(/\s+/g, ' ').trim()
-  const original = change?.from ?? current
-  const ta = h('textarea', { class: 'fp-in', rows: 2 })
-  ta.value = current
-  ta.addEventListener('keydown', (e) => e.stopPropagation())
-  ta.addEventListener('change', () => setText(el, original, ta.value.trim()))
-  return h('div', { style: { display: 'grid', gap: '4px' } },
-    ta,
-    h('div', { class: 'fp-row' },
-      h('span', { class: 'fp-help grow' }, change ? `Was: “${change.from}”` : 'Edit here, or double-click the text on the page.'),
-      change ? h('button', { class: 'fp-btn', onClick: () => setText(el, original, original) }, 'revert') : null,
-      h('button', { class: 'fp-btn', title: 'Edit the text in place on the page', onClick: () => startTextEdit(el) }, 'edit on page')))
+  const rows = []
+  if (/^(input|textarea)$/.test(el.localName)) {
+    if (/^(button|submit|reset)$/.test(el.type)) rows.push(row('label', el.getAttribute('value') || '', { attr: 'value' }))
+    else rows.push(row('placeholder', el.getAttribute('placeholder') || '', { attr: 'placeholder' }))
+  } else {
+    const simple = !el.children.length || (el.children.length === 1 && el.firstElementChild.hasAttribute('data-fp-text'))
+    const slots = textSlots(el)
+    if (simple) rows.push(row(null, norm(el.textContent), {}))
+    else slots.forEach((n, i) => rows.push(row(slots.length > 1 ? `text ${i + 1}` : null, norm(n.nodeValue), { slot: i })))
+  }
+  if (!rows.length) {
+    // The words live in child elements: offer those.
+    const kids = [...el.querySelectorAll('*')].filter((n) => textSlots(n).length && !n.closest('[data-fp-host]')).slice(0, 8)
+    if (!kids.length) return h('div', { class: 'fp-help' }, 'This element has no text. Text drawn by CSS (::before content) or inside an image or SVG can’t be edited here; add a note instead.')
+    return h('div', { style: { display: 'grid', gap: '4px' } },
+      h('div', { class: 'fp-help' }, 'The text is in child elements. Select one to edit it, or double-click the words on the page.'),
+      ...kids.map((n) => h('button', { class: 'fp-btn', style: { justifyContent: 'flex-start', textAlign: 'left' }, onClick: () => select(n) }, `<${n.localName}> “${norm(textSlots(n).map((t) => t.nodeValue).join(' ')).slice(0, 40)}”`)))
+  }
+  rows.push(h('div', { class: 'fp-help' }, 'Edit here, or double-click the words on the page.'))
+  return h('div', { style: { display: 'grid', gap: '8px' } }, ...rows)
 }
 
 /* ── existing effects ───────────────────────────────────────────────────── */
@@ -893,7 +1064,7 @@ export function summarize(c) {
   const who = describe(c.target)
   const theme = c.target.theme && c.target.theme !== 'both' ? ` · ${c.target.theme}` : ''
   const page = c.target.route ? ` · ${c.target.route} only` : ''
-  const scope = page + (c.target.scope === 'component' ? ' · every copy' : c.target.scope === 'selector' && c.target.classSelector && c.target.classSelector !== ':root' ? ` · all ${c.target.classSelector}` : '')
+  const scope = page + (c.target.scope === 'component' ? ' · every copy' : c.target.scope === 'uses' ? ` · ${c.target.uses.length} place${c.target.uses.length === 1 ? '' : 's'}` : c.target.scope === 'selector' && c.target.classSelector && c.target.classSelector !== ':root' ? ` · all ${c.target.classSelector}` : '')
   if (c.type === 'style')
     return {
       what: who + theme + scope,
@@ -901,9 +1072,10 @@ export function summarize(c) {
     }
   if (c.type === 'reorder') return { what: 'Move ' + who, det: `into ${describe(c.to.parent)}${c.to.before ? ' before ' + describe(c.to.before) : ' at the end'}` }
   if (c.type === 'freeMove') return { what: 'Free move ' + who, det: `${c.dx}px, ${c.dy}px at ${c.viewport.w}×${c.viewport.h} (approximate)` }
-  if (c.type === 'text') return { what: 'Text ' + who, det: `“${c.from}” → “${c.to}”` }
+  if (c.type === 'text') return { what: 'Text ' + who + (c.attr ? ` (${c.attr})` : c.slot != null ? ` · run ${c.slot + 1}` : ''), det: `“${c.from}” → “${c.to}”` }
   if (c.type === 'effect') return { what: `${c.effect} on ${who}`, det: c.note || JSON.stringify(c.params || {}) }
   if (c.type === 'name') return { what: 'Name ' + who, det: c.name }
+  if (c.type === 'note') return { what: 'Note on ' + who + scope, det: c.text }
   if (c.type === 'replace') return { what: `Every ${c.kind} ${c.from}${c.target.route ? ` on ${c.target.route}` : ''}`, det: `→ ${c.to}` }
   if (c.type === 'keyframes') return { what: `Colors of @keyframes ${c.name}`, det: `found on ${who}` }
   if (c.type === 'galleryAdd') return { what: `Add “${c.name}” to the gallery`, det: `from ${who}: ${c.found.kind}${c.found.name ? ' ' + c.found.name : ''}` }
@@ -919,6 +1091,7 @@ const TYPE_GROUPS = [
   ['Moves', (c) => c.type === 'reorder' || c.type === 'freeMove'],
   ['Gallery additions', (c) => c.type === 'galleryAdd'],
   ['Names', (c) => c.type === 'name'],
+  ['Notes', (c) => c.type === 'note'],
 ]
 
 const noteOpen = new Set()
@@ -936,7 +1109,7 @@ function changeNote(c) {
   // elsewhere (in case it never got focus).
   const docs = [document, view.doc].filter((d, i, a) => d && a.indexOf(d) === i)
   const fold = () => {
-    docs.forEach((d) => d.removeEventListener('pointerdown', away, true))
+    docs.forEach((d) => off(d, 'pointerdown', away, true))
     if (!ta.isConnected || ta.value.trim() || c.note) return
     noteOpen.delete(c.id)
     renderBody()
@@ -944,7 +1117,7 @@ function changeNote(c) {
   const away = (e) => {
     if (!e.composedPath().includes(ta)) fold()
   }
-  docs.forEach((d) => d.addEventListener('pointerdown', away, true))
+  docs.forEach((d) => on(d, 'pointerdown', away, true))
   ta.addEventListener('blur', fold)
   if (!c.note) queueMicrotask(() => ta.focus())
   return ta

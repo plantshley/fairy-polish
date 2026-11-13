@@ -50,7 +50,25 @@ function componentName(node) {
   return null
 }
 
-export function tagJsx(code, rel, { typescript = false } = {}) {
+// React's built-ins reject or ignore extra props (Fragment warns), and a
+// context Provider or Consumer is not a place anyone styles.
+const NO_USE = new Set(['Fragment', 'StrictMode', 'Suspense', 'Profiler', 'Activity', 'ViewTransition'])
+
+function jsxName(n) {
+  if (n.type === 'JSXIdentifier') return n.name
+  if (n.type === 'JSXMemberExpression') return jsxName(n.object) + '.' + n.property.name
+  return ''
+}
+
+function isUseSite(n) {
+  const name = jsxName(n)
+  if (!name) return false
+  const last = name.split('.').pop()
+  if (!CAP.test(n.type === 'JSXIdentifier' ? name : last)) return false
+  return !NO_USE.has(last) && last !== 'Provider' && last !== 'Consumer'
+}
+
+export function tagJsx(code, rel, { typescript = false, uses = true } = {}) {
   let ast
   try {
     ast = parseJs(code, {
@@ -67,6 +85,16 @@ export function tagJsx(code, rel, { typescript = false } = {}) {
     if (!node || typeof node.type !== 'string') return
     const name = componentName(node)
     if (name) comp = name
+    // Component call sites: data-fp-use, which React keeps on the component's
+    // fiber so the overlay can tell copies apart by where they were used.
+    if (uses && node.type === 'JSXOpeningElement' && isUseSite(node.name)) {
+      const has = node.attributes.some((a) => a.type === 'JSXAttribute' && a.name?.name === 'data-fp-use')
+      if (!has) {
+        const { line, column } = node.loc.start
+        s.appendLeft(node.name.end, attr('data-fp-use', `${rel}:${line}:${column + 1}`))
+        count++
+      }
+    }
     if (node.type === 'JSXOpeningElement' && node.name.type === 'JSXIdentifier' && /^[a-z]/.test(node.name.name)) {
       const has = node.attributes.some((a) => a.type === 'JSXAttribute' && a.name?.name === 'data-fp-src')
       if (!has) {
