@@ -66,6 +66,9 @@ export function initPanel(rootEl, shadowRoot) {
     flush()
   }, 0))
   panel.addEventListener('focusout', () => setTimeout(flush, 0))
+  // Typing that hasn't been committed yet (fields commit on change).
+  panel.addEventListener('input', (e) => (e.target.fpDirty = true), true)
+  panel.addEventListener('change', (e) => delete e.target.fpDirty, true)
   body.addEventListener('scroll', closeMenu)
   subscribe(() => schedule())
   onUi((what) => {
@@ -89,7 +92,19 @@ function flush() {
   renderBody()
 }
 
+// A redraw removes the field being typed in before it blurs, so its change
+// event would never fire (clicks on the page don't move focus). Commit it
+// first.
+function commitTyping() {
+  const f = shadow?.activeElement
+  if (f?.fpDirty && panel.contains(f)) {
+    delete f.fpDirty
+    f.dispatchEvent(new Event('change', { bubbles: true }))
+  }
+}
+
 export function renderAll() {
+  commitTyping()
   pending = false
   closeMenu()
   panel.className = 'fp-panel ' + state.dock + (state.collapsed ? ' collapsed' : '')
@@ -528,6 +543,7 @@ function confirmClear() {
 /* ── body ───────────────────────────────────────────────────────────────── */
 
 function renderBody() {
+  commitTyping()
   const scroll = body.scrollTop
   stopThumbs()
   clear(body)
@@ -864,7 +880,9 @@ function noteSection(el) {
   const ta = h('textarea', { class: 'fp-in', rows: 3, placeholder: 'e.g. make this sticky on scroll, or pull this label from settings' })
   ta.value = mine?.text || ''
   ta.addEventListener('keydown', (e) => e.stopPropagation())
-  ta.addEventListener('change', () => setElementNote(el, ta.value.trim()))
+  // Saved as you type: clicks on the page don't blur this box, so a
+  // change event can be lost when the panel redraws for a new selection.
+  ta.addEventListener('input', () => setElementNote(el, ta.value.trim()))
   const others = notes.filter((c) => c !== mine)
   return h('div', { style: { display: 'grid', gap: '4px' } },
     h('div', { class: 'fp-help' }, 'A request for the agent about this element, for anything the controls don’t cover. It follows “applies to”.'),
@@ -1101,15 +1119,13 @@ function changeNote(c) {
   ta.value = c.note || ''
   ta.style.marginTop = '3px'
   ta.addEventListener('keydown', (e) => e.stopPropagation())
-  ta.addEventListener('change', () => {
-    noteOpen.delete(c.id)
-    setChangeNote(c.id, ta.value.trim())
-  })
+  ta.addEventListener('input', () => setChangeNote(c.id, ta.value.trim()))
   // Opened but left empty: fold back to the pen on blur, or on any click
   // elsewhere (in case it never got focus).
   const docs = [document, view.doc].filter((d, i, a) => d && a.indexOf(d) === i)
   const fold = () => {
     docs.forEach((d) => off(d, 'pointerdown', away, true))
+    if (ta.value.trim()) noteOpen.delete(c.id)
     if (!ta.isConnected || ta.value.trim() || c.note) return
     noteOpen.delete(c.id)
     renderBody()

@@ -194,7 +194,7 @@ export function renderAttached(el) {
     const note = h('textarea', { class: 'fp-in', placeholder: c.effect === 'custom' ? 'Describe the effect: what moves, when, how fast' : 'Optional note for the agent' })
     note.value = c.note || ''
     note.addEventListener('keydown', (e) => e.stopPropagation())
-    note.addEventListener('change', () => updateEffect(c.id, { note: note.value }))
+    note.addEventListener('input', () => updateEffect(c.id, { note: note.value }))
     rows.push(note)
     // Each effect folds on its own; the choice is remembered per change.
     const d = h('details', { class: 'fp-fx', open: state.sections['fx:' + c.id] === false ? null : true }, head, h('div', {}, rows))

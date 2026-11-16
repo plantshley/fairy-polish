@@ -358,7 +358,7 @@ export function setElementNote(el, text) {
     }
     if (i >= 0) changes[i].text = text
     else changes.push({ id: nextId(), type: 'note', target, text })
-  })
+  }, 'enote:' + key + ':' + target.fpId)
 }
 
 export function elementNotes(el) {
