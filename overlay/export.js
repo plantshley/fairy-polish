@@ -8,6 +8,17 @@ import { DISPLAY_NAME } from './dom.js'
 import { describe } from './locate.js'
 import { state } from './state.js'
 import { toast } from './toast.js'
+import { LOCAL_FONTS } from './presets.js'
+
+// "local:name" marks a font installed on this computer: the site has to ship
+// the file.
+function fontLoad(url) {
+  if (!url) return ''
+  if (!url.startsWith('local:')) return ` (load ${url})`
+  const name = url.slice(6)
+  const file = LOCAL_FONTS.find(([n]) => n === name)?.[2]
+  return ` (installed font, not a web font: add the file to the project with an @font-face${file ? `; file: ${file}` : ''})`
+}
 
 const SCOPE_TEXT = { instance: 'this element only', component: 'every copy of this element (everything rendered by the same source line)', selector: 'every element matching the class selector', uses: 'only the places listed below' }
 
@@ -66,8 +77,8 @@ export function toMarkdown(file) {
     if (c.attr) lines.push(`- In the \`${c.attr}\` attribute`)
     lines.push(`- Screen: ${sizeText(t.media)}`)
     if (t.theme && t.theme !== 'both') lines.push(`- Theme: ${t.theme}`)
-    if (c.type === 'style') for (const [p, v] of Object.entries(c.props)) lines.push(`- \`${p}\`: \`${v.from}\` → \`${v.to}\`${v.toToken ? ` (token \`${v.toToken}\`)` : ''}${v.mirrored ? ' (mirrored from the other theme)' : ''}${v.fontUrl ? ` (load ${v.fontUrl})` : ''}`)
-    if (c.type === 'replace') lines.push(`- Replace every ${c.kind} \`${c.from}\` with \`${c.to}\` in the site’s CSS${c.target.route ? `, on ${c.target.route} only` : ''}${c.fontUrl ? ` (load ${c.fontUrl})` : ''}`)
+    if (c.type === 'style') for (const [p, v] of Object.entries(c.props)) lines.push(`- \`${p}\`: \`${v.from}\` → \`${v.to}\`${v.toToken ? ` (token \`${v.toToken}\`)` : ''}${v.mirrored ? ' (mirrored from the other theme)' : ''}${fontLoad(v.fontUrl)}`)
+    if (c.type === 'replace') lines.push(`- Replace every ${c.kind} \`${c.from}\` with \`${c.to}\` in the site’s CSS${c.target.route ? `, on ${c.target.route} only` : ''}${fontLoad(c.fontUrl)}`)
     if (c.type === 'keyframes') lines.push(`- Recolor \`@keyframes ${c.name}\`: ${colorPairs(c.from, c.to).map(([a, b]) => `\`${a}\` → \`${b}\``).join(', ')}`)
     if (c.type === 'galleryAdd') lines.push(`- Add to the fairy polish gallery as “${c.name}”: ${c.found.kind}${c.found.name ? ` \`${c.found.name}\`` : ''}${c.found.pseudo ? ` on \`${c.found.pseudo}\`` : ''}`)
     if (c.type === 'reorder') lines.push(`- Move into ${describe(c.to.parent)}${c.to.before ? `, before ${describe(c.to.before)}` : ', at the end'}`)

@@ -571,6 +571,7 @@ function loadFonts(doc) {
     for (const v of Object.values(c.props || {})) if (v.fontUrl) urls.add(v.fontUrl)
   }
   for (const href of urls) {
+    if (!href.startsWith('http')) continue
     if ([...doc.querySelectorAll('link[data-fp-gfont]')].some((l) => l.href === href)) continue
     const link = doc.createElement('link')
     link.rel = 'stylesheet'
