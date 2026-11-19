@@ -70,7 +70,7 @@ export function initPanel(rootEl, shadowRoot) {
   panel.addEventListener('input', (e) => (e.target.fpDirty = true), true)
   panel.addEventListener('change', (e) => delete e.target.fpDirty, true)
   body.addEventListener('scroll', closeMenu)
-  subscribe(() => schedule())
+  subscribe((kind) => kind !== 'draft' && schedule())
   onUi((what) => {
     if (['selection', 'size', 'tab', 'theme', 'rerender', 'mode'].includes(what)) renderAll()
   })

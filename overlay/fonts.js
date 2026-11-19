@@ -3,11 +3,14 @@
 // the menu opens and into the page when one is picked.
 
 import { dropdown } from './controls.js'
+import { asDraft, clearDraft } from './store.js'
 import { fontFamilies } from './tokens.js'
 import { SYSTEM_FONTS, GOOGLE_FONTS, LOCAL_FONTS, googleUrl, loadGoogle } from './presets.js'
 
 const GENERIC = ['system-ui', 'serif', 'sans-serif', 'monospace']
 
+// Hovering an item previews it on the page through a draft; leaving the
+// menu or picking drops the draft.
 export function fontDropdown(doc, current, onPick) {
   const items = []
   const quote = (f) => (/[\s\d]/.test(f) ? `"${f}"` : f)
@@ -24,5 +27,8 @@ export function fontDropdown(doc, current, onPick) {
   return dropdown(match ? match.value : current, list, (val, it) => {
     if (it.fontUrl?.startsWith('http')) loadGoogle(doc, [it.label])
     onPick(val, it.fontUrl || null)
-  }, { onOpen: () => loadGoogle(document, GOOGLE_FONTS.map(([n]) => n)) })
+  }, {
+    onOpen: () => loadGoogle(document, GOOGLE_FONTS.map(([n]) => n)),
+    onHover: (it) => (it ? asDraft(() => onPick(it.value, it.fontUrl || null)) : clearDraft()),
+  })
 }

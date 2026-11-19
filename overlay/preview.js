@@ -8,9 +8,10 @@
 // Structural previews (reorders, text) touch the DOM, so they are reverted
 // and replayed in order only when the structural part of the set changes.
 
-import { getChanges as allChanges, patchSilent } from './store.js'
+import { previewChanges as allChanges, patchSilent, hasDraft } from './store.js'
 import { resolve, previewSelector, baseSelector, stillMatches, idText } from './locate.js'
 import { normalizeColor } from './tokens.js'
+import { parseColor } from './mirror.js'
 import { themeWrap, currentTheme } from './theme.js'
 import { mediaMatches } from './media.js'
 import { state } from './state.js'
@@ -367,6 +368,7 @@ function safe(fn) {
 /* ── computed values for verify() ───────────────────────────────────────── */
 
 function recordComputed(doc) {
+  if (hasDraft()) return
   const win = doc.defaultView
   const w = win.innerWidth
   const hgt = win.innerHeight
@@ -406,6 +408,7 @@ export function teardown(doc) {
   if (m) for (const r of m.values()) safe(r.cleanup)
   running.delete(doc)
   doc.getElementById(STYLE_ID)?.remove()
+  for (const n of doc.querySelectorAll('[data-fp-tok]')) delete n.dataset.fpTok
 }
 
 /* ── text wrappers (part: text) ─────────────────────────────────────────── */
@@ -488,6 +491,7 @@ export function unwrapText(doc) {
 const COLOR_RE = /#[0-9a-f]{3,8}\b|(?:rgba?|hsla?)\([^)]*\)|\b[a-z]+\b/gi
 const KEYWORDS = /^(inherit|initial|unset|revert|none|auto|solid|dashed|dotted|double|transparent|currentcolor|important|inset|ease|linear|infinite|normal|bold|italic)$/i
 const replaceCache = new WeakMap()
+let tokSeq = 0
 
 function ownSheet(sheet) {
   const n = sheet.ownerNode
@@ -502,10 +506,27 @@ function replaceCss(doc) {
   const path = doc.defaultView.location.pathname
   const reps = getChanges().filter((c) => c.type === 'replace' && (!c.target?.route || c.target.route === path))
   if (!reps.length) return ''
-  const sig = JSON.stringify(reps.map((r) => [r.kind, r.from, r.to])) + doc.styleSheets.length + path
+  // Elements with tokens set inline by a script (style.setProperty, React's
+  // style prop): <html>, or an app wrapper like .portal.
+  const inlineEls = [...doc.querySelectorAll('[style*="--"]')].filter((el) => !el.closest('[data-fp-host]'))
+  const sig = JSON.stringify(reps.map((r) => [r.kind, r.from, r.to])) + doc.styleSheets.length + path + inlineEls.map((el) => el.style.cssText).join('|')
   const cached = replaceCache.get(doc)
   if (cached?.sig === sig) return cached.css
-  const colors = reps.filter((r) => r.kind === 'color').map((r) => ({ from: normalizeColor(doc, r.from), to: r.to })).filter((r) => r.from)
+  const colors = reps.filter((r) => r.kind === 'color').map((r) => {
+    const from = normalizeColor(doc, r.from)
+    return { from, to: r.to, f: parseColor(from), t: parseColor(normalizeColor(doc, r.to)) }
+  }).filter((r) => r.from)
+  // An opaque color also replaces its translucent copies (rgba glows and
+  // tints of the same color), keeping each copy's alpha. An exact match wins.
+  const swap = (n) => {
+    const exact = colors.find((c) => c.from === n)
+    if (exact) return exact.to
+    const p = parseColor(n)
+    const fam = p && p.a < 1 && colors.find((c) => c.f?.a === 1 && c.t && c.f.r === p.r && c.f.g === p.g && c.f.b === p.b)
+    if (!fam) return null
+    const { r, g, b, a } = fam.t
+    return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${+(p.a * a).toFixed(3)})`
+  }
   const fonts = reps.filter((r) => r.kind === 'font').map((r) => ({ from: firstFamily(r.from), to: r.to }))
   const memo = new Map()
   const norm = (tok) => {
@@ -513,6 +534,38 @@ function replaceCss(doc) {
     return memo.get(tok)
   }
   const out = []
+  let fontHit = false
+  const rewrite = (style, force) => {
+    const decls = []
+    for (let i = 0; i < style.length; i++) {
+      const prop = style[i]
+      const val = style.getPropertyValue(prop)
+      if (!val || val.includes('var(')) continue
+      let next = val
+      // A bare channel triple (--accent-rgb: 76, 165, 194) feeds rgba(var(...)).
+      const triple = colors.length && prop.startsWith('--') && val.match(/^\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*$/)
+      if (triple) {
+        const hit = colors.find((c) => c.f?.a === 1 && c.t && c.f.r === +triple[1] && c.f.g === +triple[2] && c.f.b === +triple[3])
+        if (hit) next = [hit.t.r, hit.t.g, hit.t.b].map(Math.round).join(', ')
+      } else if (colors.length) {
+        next = next.replace(COLOR_RE, (tok) => {
+          const n = norm(tok)
+          return (n && swap(n)) || tok
+        })
+      }
+      // A font token (--font-body: 'Open Sans', ...) changes at the source,
+      // so every rule that reads it follows.
+      if (fonts.length && (prop === 'font-family' || prop.startsWith('--'))) {
+        const hit = fonts.find((f) => f.from === firstFamily(val))
+        if (hit) {
+          next = hit.to
+          fontHit = true
+        }
+      }
+      if (next !== val) decls.push(`${prop}: ${next}${force || style.getPropertyPriority(prop) ? ' !important' : ''};`)
+    }
+    return decls
+  }
   const visit = (rules, wrap) => {
     for (const r of rules) {
       if (r.type === CSSRule.MEDIA_RULE) {
@@ -527,25 +580,7 @@ function replaceCss(doc) {
         if (r.cssRules) visit(r.cssRules, wrap)
         continue
       }
-      const decls = []
-      for (let i = 0; i < r.style.length; i++) {
-        const prop = r.style[i]
-        const val = r.style.getPropertyValue(prop)
-        if (!val || val.includes('var(')) continue
-        let next = val
-        if (colors.length) {
-          next = next.replace(COLOR_RE, (tok) => {
-            const n = norm(tok)
-            const hit = n && colors.find((c) => c.from === n)
-            return hit ? hit.to : tok
-          })
-        }
-        if (fonts.length && prop === 'font-family') {
-          const hit = fonts.find((f) => f.from === firstFamily(val))
-          if (hit) next = hit.to
-        }
-        if (next !== val) decls.push(`${prop}: ${next}${r.style.getPropertyPriority(prop) ? ' !important' : ''};`)
-      }
+      const decls = rewrite(r.style)
       if (decls.length) out.push(wrap(`${r.selectorText} { ${decls.join(' ')} }`))
     }
   }
@@ -555,9 +590,18 @@ function replaceCss(doc) {
       visit(sheet.cssRules, (x) => x)
     } catch {}
   }
+  // Inline tokens beat every stylesheet rule, so their rewrites need
+  // !important on a selector for that element.
+  for (const el of inlineEls) {
+    const d = rewrite(el.style, true).filter((x) => x.startsWith('--'))
+    if (!d.length) continue
+    if (el !== doc.documentElement && !el.dataset.fpTok) el.dataset.fpTok = String(++tokSeq)
+    out.push(`${el === doc.documentElement ? ':where(:root):not(#fp-w)' : `[data-fp-tok="${el.dataset.fpTok}"]`} { ${d.join(' ')} }`)
+  }
   // A font the page only gets from the browser default has no declaration.
-  const bodyFam = doc.body ? firstFamily(doc.defaultView.getComputedStyle(doc.body).fontFamily) : ''
-  for (const f of fonts) if (bodyFam === f.from && !out.some((x) => x.includes('font-family'))) out.push(`body { font-family: ${f.to}; }`)
+  // Read with the preview off, or the next pass sees the new font and drops it.
+  const bodyFam = doc.body ? withPreviewOff(doc, () => firstFamily(doc.defaultView.getComputedStyle(doc.body).fontFamily)) : ''
+  for (const f of fonts) if (bodyFam === f.from && !fontHit) out.push(`body { font-family: ${f.to}; }`)
   const css = out.join('\n')
   replaceCache.set(doc, { sig, css })
   return css

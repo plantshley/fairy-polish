@@ -26,9 +26,11 @@ let open = null
 
 export function closeMenu() {
   if (!open) return
-  open.el.remove()
-  open.off()
+  const o = open
   open = null
+  o.el.remove()
+  o.off()
+  o.onHover?.(null)
 }
 
 export function menuOpenFor(anchor) {
@@ -40,7 +42,8 @@ function norm(it) {
 }
 
 // items: [{ value, label, hint, group, style, swatch }]. Picks call onPick(value, item).
-export function openMenuAt(anchor, items, onPick, { current } = {}) {
+// onHover(item | null): the pointer entered an item, or left the menu.
+export function openMenuAt(anchor, items, onPick, { current, onHover } = {}) {
   closeMenu()
   const root = anchor.getRootNode().querySelector('.fp-root')
   const menu = h('div', { class: 'fp-menu' })
@@ -59,12 +62,14 @@ export function openMenuAt(anchor, items, onPick, { current } = {}) {
           closeMenu()
           onPick(it.value, it)
         },
+        onPointerenter: onHover ? () => onHover(it) : null,
       },
         it.swatch ? h('i', { class: 'fp-menu-sw', style: { background: it.swatch } }) : null,
         h('span', { class: 'lab', style: it.style || null }, it.label),
         it.hint ? h('span', { class: 'hint' }, it.hint) : null),
     )
   }
+  if (onHover) menu.addEventListener('pointerleave', () => onHover(null))
   root.append(menu)
   const r = anchor.getBoundingClientRect()
   const mh = Math.min(menu.scrollHeight, 280)
@@ -89,6 +94,7 @@ export function openMenuAt(anchor, items, onPick, { current } = {}) {
   open = {
     el: menu,
     anchor,
+    onHover,
     off: () => {
       off(doc, 'pointerdown', away, true)
       off(doc, 'keydown', key, true)
@@ -97,7 +103,7 @@ export function openMenuAt(anchor, items, onPick, { current } = {}) {
 }
 
 // A styled replacement for <select>.
-export function dropdown(value, items, onPick, { cls = '', title, onOpen } = {}) {
+export function dropdown(value, items, onPick, { cls = '', title, onOpen, onHover } = {}) {
   const list = items.map(norm)
   const cur = list.find((i) => i.value === value)
   const btn = h('button', { class: 'fp-dd ' + cls, type: 'button', title: title || cur?.title || String(value ?? '') },
@@ -107,7 +113,7 @@ export function dropdown(value, items, onPick, { cls = '', title, onOpen } = {})
   btn.addEventListener('click', () => {
     if (menuOpenFor(btn)) return closeMenu()
     onOpen?.()
-    openMenuAt(btn, list, onPick, { current: value })
+    openMenuAt(btn, list, onPick, { current: value, onHover })
   })
   return btn
 }

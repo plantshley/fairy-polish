@@ -27,16 +27,28 @@ export function scanTokens(doc) {
       }
     }
   }
+  // The site's own values: skip the preview sheet and resolve without it.
+  const preview = doc.getElementById('fp-preview')
   for (const sheet of doc.styleSheets) {
+    if (sheet.ownerNode === preview) continue
     try {
       visit(sheet.cssRules, false)
     } catch {}
   }
-  const cs = doc.defaultView.getComputedStyle(doc.documentElement)
+  // Tokens a script sets inline on <html> win over the stylesheet value.
+  const inl = doc.documentElement.style
+  for (let i = 0; i < inl.length; i++) if (inl[i].startsWith('--')) light[inl[i]] = inl.getPropertyValue(inl[i]).trim()
+  const was = preview?.disabled
+  if (preview) preview.disabled = true
   const colors = []
-  for (const name of Object.keys(light)) {
-    const resolved = normalizeColor(doc, cs.getPropertyValue(name).trim())
-    if (resolved) colors.push({ name, value: resolved })
+  try {
+    const cs = doc.defaultView.getComputedStyle(doc.documentElement)
+    for (const name of Object.keys(light)) {
+      const resolved = normalizeColor(doc, cs.getPropertyValue(name).trim())
+      if (resolved) colors.push({ name, value: resolved })
+    }
+  } finally {
+    if (preview) preview.disabled = was
   }
   return { light, dark, colors }
 }

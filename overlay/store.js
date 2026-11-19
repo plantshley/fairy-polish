@@ -11,6 +11,10 @@ const undoStack = []
 const redoStack = []
 const subs = new Set()
 let lastMerge = { key: null, at: 0 }
+// A draft is a preview-only copy of the changes (hovering a menu item): the
+// page shows it, nothing is saved, and the next real commit drops it.
+let draft = null
+let drafting = false
 
 function load() {
   try {
@@ -34,6 +38,31 @@ export function getChanges() {
   return data.changes
 }
 
+// What the page preview shows: the draft while there is one.
+export function previewChanges() {
+  return draft ?? data.changes
+}
+
+export function hasDraft() {
+  return !!draft
+}
+
+// Run an edit (setStyle, setReplace) as a draft instead of a commit.
+export function asDraft(run) {
+  drafting = true
+  try {
+    run()
+  } finally {
+    drafting = false
+  }
+}
+
+export function clearDraft() {
+  if (!draft) return
+  draft = null
+  emit('draft')
+}
+
 export function subscribe(fn) {
   subs.add(fn)
   return () => subs.delete(fn)
@@ -44,6 +73,13 @@ function emit(kind) {
 }
 
 export function commit(fn, mergeKey = null) {
+  if (drafting) {
+    draft = JSON.parse(JSON.stringify(data.changes))
+    fn(draft)
+    emit('draft')
+    return
+  }
+  draft = null
   const now = Date.now()
   const merging = mergeKey && lastMerge.key === mergeKey && now - lastMerge.at < MERGE_MS
   if (!merging) {
